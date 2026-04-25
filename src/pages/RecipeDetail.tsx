@@ -29,7 +29,7 @@ export default function RecipeDetail() {
     if (!id) return;
     (async () => {
       const [{ data: r }, { data: ing }, { data: st }] = await Promise.all([
-        supabase.from("recipes").select("*,profiles(display_name,avatar_url)").eq("id", id).maybeSingle(),
+        supabase.from("recipes").select("*,profiles!recipes_author_profile_fkey(display_name,avatar_url)").eq("id", id).maybeSingle(),
         supabase.from("recipe_ingredients").select("*").eq("recipe_id", id).order("position"),
         supabase.from("recipe_steps").select("*").eq("recipe_id", id).order("position"),
       ]);

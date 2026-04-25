@@ -32,7 +32,7 @@ export const Reviews = ({ recipeId }: { recipeId: string }) => {
   const load = async () => {
     const { data } = await supabase
       .from("reviews")
-      .select("id,user_id,rating,comment,created_at,profiles(display_name,avatar_url)")
+      .select("id,user_id,rating,comment,created_at,profiles!reviews_author_profile_fkey(display_name,avatar_url)")
       .eq("recipe_id", recipeId)
       .order("created_at", { ascending: false });
     const list = (data ?? []) as any as Review[];
