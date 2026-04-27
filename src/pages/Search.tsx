@@ -28,6 +28,7 @@ export default function SearchPage() {
     let query = supabase
       .from("recipes")
       .select("id,title,cover_image_url,calories,spice_level,cuisine,cooking_style,time_minutes")
+      .eq("is_published", true)
       .order("created_at", { ascending: false })
       .limit(50);
     if (q.trim()) query = query.ilike("title", `%${q.trim()}%`);
