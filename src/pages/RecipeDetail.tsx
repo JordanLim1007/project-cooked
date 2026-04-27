@@ -4,16 +4,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Heart, Clock, Flame, Utensils, Trash2 } from "lucide-react";
-import { StepPlayer } from "@/components/recipe/StepPlayer";
+import { ArrowLeft, Heart, Clock, Flame, Utensils, Trash2, Lightbulb, Loader2 } from "lucide-react";
+import { InstructionList } from "@/components/recipe/InstructionList";
 import { Reviews } from "@/components/recipe/Reviews";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
-type Recipe = { id: string; user_id: string; title: string; description: string | null; cover_image_url: string | null; calories: number | null; spice_level: string | null; cuisine: string | null; cooking_style: string | null; time_minutes: number | null; food_type: string | null; meal_type: string | null; difficulty: string | null; profiles?: { display_name: string | null; avatar_url: string | null } | null };
+type Recipe = { id: string; user_id: string; title: string; description: string | null; cover_image_url: string | null; calories: number | null; spice_level: string | null; cuisine: string | null; cooking_style: string | null; time_minutes: number | null; food_type: string | null; meal_type: string | null; difficulty: string | null; tips: string[] | null; is_published: boolean; profiles?: { display_name: string | null; avatar_url: string | null } | null };
 type Ingredient = { id: string; name: string; quantity: string | null; image_url: string | null; position: number };
-type Step = { id: string; text: string; position: number; animation_key: string | null };
+type Step = { id: string; text: string; position: number; keywords: string[] | null };
+type RecipeImage = { id: string; image_url: string; position: number };
 
 export default function RecipeDetail() {
   const { id } = useParams();
@@ -22,20 +23,23 @@ export default function RecipeDetail() {
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [steps, setSteps] = useState<Step[]>([]);
+  const [images, setImages] = useState<RecipeImage[]>([]);
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!id) return;
     (async () => {
-      const [{ data: r }, { data: ing }, { data: st }] = await Promise.all([
+      const [{ data: r }, { data: ing }, { data: st }, { data: imgs }] = await Promise.all([
         supabase.from("recipes").select("*,profiles!recipes_author_profile_fkey(display_name,avatar_url)").eq("id", id).maybeSingle(),
         supabase.from("recipe_ingredients").select("*").eq("recipe_id", id).order("position"),
         supabase.from("recipe_steps").select("*").eq("recipe_id", id).order("position"),
+        supabase.from("recipe_images").select("*").eq("recipe_id", id).order("position"),
       ]);
       setRecipe(r as any);
       setIngredients(ing ?? []);
-      setSteps(st ?? []);
+      setSteps((st as any) ?? []);
+      setImages(imgs ?? []);
       setLoading(false);
       if (user) {
         const { data } = await supabase.from("saved_recipes").select("recipe_id").eq("user_id", user.id).eq("recipe_id", id).maybeSingle();
@@ -68,6 +72,7 @@ export default function RecipeDetail() {
   if (!recipe) return <AppShell><div className="p-6">Recipe not found.</div></AppShell>;
 
   const isOwner = user?.id === recipe.user_id;
+  const isAnalyzing = !recipe.is_published;
 
   return (
     <AppShell>
@@ -76,7 +81,7 @@ export default function RecipeDetail() {
         {recipe.cover_image_url ? (
           <img src={recipe.cover_image_url} alt={recipe.title} className="h-64 w-full object-cover md:h-80" />
         ) : (
-          <div className="h-64 w-full gradient-warm md:h-80" />
+          <div className="h-64 w-full bg-muted md:h-80" />
         )}
         <div className="absolute inset-x-0 top-0 flex items-center justify-between p-4">
           <button onClick={() => navigate(-1)} className="flex h-10 w-10 items-center justify-center rounded-full bg-background/90 backdrop-blur-md shadow-card">
@@ -109,49 +114,100 @@ export default function RecipeDetail() {
         </div>
       </div>
 
-      <main className="mx-auto max-w-2xl space-y-6 p-5">
-        <div>
-          {recipe.cuisine && <span className="mb-2 inline-block rounded-full bg-secondary/15 px-2.5 py-0.5 text-xs font-semibold text-secondary-deep">{recipe.cuisine}</span>}
-          <h1 className="text-3xl">{recipe.title}</h1>
-          {recipe.description && <p className="mt-2 text-muted-foreground">{recipe.description}</p>}
-          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
-            {recipe.time_minutes && <span className="inline-flex items-center gap-1"><Clock className="h-4 w-4" />{recipe.time_minutes} min</span>}
-            {recipe.calories && <span>{recipe.calories} kcal</span>}
-            {recipe.spice_level && <span className="inline-flex items-center gap-1"><Flame className="h-4 w-4 text-primary" />{recipe.spice_level}</span>}
-            {recipe.cooking_style && <span className="inline-flex items-center gap-1"><Utensils className="h-4 w-4" />{recipe.cooking_style}</span>}
+      <main className="mx-auto max-w-2xl space-y-10 px-5 py-8">
+        {/* Title block */}
+        <header className="space-y-3">
+          {recipe.cuisine && (
+            <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">{recipe.cuisine}</p>
+          )}
+          <h1 className="text-3xl font-semibold leading-tight tracking-tight md:text-4xl">{recipe.title}</h1>
+          {recipe.description && <p className="text-base leading-relaxed text-muted-foreground">{recipe.description}</p>}
+          <div className="flex flex-wrap gap-x-5 gap-y-1.5 pt-1 text-sm text-muted-foreground">
+            {recipe.time_minutes && <span className="inline-flex items-center gap-1.5"><Clock className="h-4 w-4" /><strong className="font-semibold text-foreground">{recipe.time_minutes} min</strong></span>}
+            {recipe.calories && <span><strong className="font-semibold text-foreground">{recipe.calories}</strong> kcal</span>}
+            {recipe.spice_level && <span className="inline-flex items-center gap-1.5"><Flame className="h-4 w-4" />{recipe.spice_level}</span>}
+            {recipe.cooking_style && <span className="inline-flex items-center gap-1.5"><Utensils className="h-4 w-4" />{recipe.cooking_style}</span>}
           </div>
-        </div>
+        </header>
 
-        {/* Ingredients horizontal scroll */}
-        {ingredients.length > 0 && (
+        {/* Extra photos gallery */}
+        {images.length > 1 && (
           <section>
-            <h2 className="mb-3 text-xl font-bold">Ingredients</h2>
-            <div className="no-scrollbar flex gap-4 overflow-x-auto pb-2">
-              {ingredients.map(ing => (
-                <div key={ing.id} className="flex w-20 shrink-0 flex-col items-center text-center">
-                  <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-muted text-2xl font-bold text-primary">
-                    {ing.image_url ? <img src={ing.image_url} alt={ing.name} className="h-full w-full object-cover" /> : ing.name[0]?.toUpperCase()}
-                  </div>
-                  <p className="mt-2 line-clamp-2 text-xs font-semibold">{ing.name}</p>
-                  {ing.quantity && <p className="text-[10px] text-muted-foreground">{ing.quantity}</p>}
+            <div className="grid grid-cols-3 gap-2">
+              {images.slice(1).map((img) => (
+                <div key={img.id} className="aspect-square overflow-hidden rounded-lg bg-muted">
+                  <img src={img.image_url} alt="" loading="lazy" className="h-full w-full object-cover" />
                 </div>
               ))}
             </div>
           </section>
         )}
 
-        {/* Step Player */}
+        {/* Analyzing notice */}
+        {isAnalyzing && isOwner && (
+          <div className="flex items-center gap-3 rounded-xl border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            We're analysing your recipe to highlight the important parts. It will appear on the homepage shortly.
+          </div>
+        )}
+
+        <hr className="border-border" />
+
+        {/* Ingredients — bullet list */}
+        {ingredients.length > 0 && (
+          <section>
+            <h2 className="mb-4 text-sm font-semibold uppercase tracking-[0.16em] text-muted-foreground">Ingredients</h2>
+            <ul className="space-y-2.5">
+              {ingredients.map((ing) => (
+                <li key={ing.id} className="flex items-baseline gap-3 text-base">
+                  <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-foreground/40" />
+                  <span className="flex-1">
+                    {ing.quantity && <strong className="font-semibold">{ing.quantity}</strong>}
+                    {ing.quantity && " "}
+                    <span className="text-foreground/80">{ing.name}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        <hr className="border-border" />
+
+        {/* Instructions */}
         <section>
-          <h2 className="mb-3 text-xl font-bold">Cook it step by step</h2>
-          <StepPlayer steps={steps} />
+          <h2 className="mb-5 text-sm font-semibold uppercase tracking-[0.16em] text-muted-foreground">Instructions</h2>
+          <InstructionList steps={steps} />
         </section>
+
+        {/* Tips */}
+        {recipe.tips && recipe.tips.length > 0 && (
+          <>
+            <hr className="border-border" />
+            <section>
+              <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                <Lightbulb className="h-4 w-4" /> Tips
+              </h2>
+              <ul className="space-y-2.5 rounded-xl bg-muted/40 p-5">
+                {recipe.tips.map((t, i) => (
+                  <li key={i} className="flex items-baseline gap-3 text-sm leading-relaxed text-foreground/80">
+                    <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-foreground/40" />
+                    <span>{t}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          </>
+        )}
+
+        <hr className="border-border" />
 
         {/* Reviews */}
         <Reviews recipeId={recipe.id} />
 
         {/* Author */}
-        <Link to={`/profile/${recipe.user_id}`} className="flex items-center gap-3 rounded-2xl bg-muted/50 p-4 transition-colors hover:bg-muted">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-sm font-bold text-primary">
+        <Link to={`/profile/${recipe.user_id}`} className="flex items-center gap-3 rounded-xl border border-border p-4 transition-colors hover:bg-muted/40">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted text-sm font-semibold">
             {recipe.profiles?.display_name?.[0]?.toUpperCase() || "?"}
           </div>
           <div>
