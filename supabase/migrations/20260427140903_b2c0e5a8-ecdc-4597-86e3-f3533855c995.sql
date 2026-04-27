@@ -1,0 +1,1 @@
+UPDATE public.recipes SET is_published = true WHERE is_published = false;
