@@ -54,7 +54,8 @@ export default function UploadPage() {
 
   const onPick = (e: React.ChangeEvent<HTMLInputElement>) => {
     const list = Array.from(e.target.files ?? []);
-    setFiles([...files, ...list].slice(0, 6));
+    setFiles([...files, ...list].slice(0, 12));
+    e.target.value = "";
   };
 
   const submit = async (e: React.FormEvent) => {
@@ -112,7 +113,12 @@ export default function UploadPage() {
         await supabase.from("recipe_images").insert(uploaded.map((url, idx) => ({ recipe_id: recipeId, image_url: url, position: idx })));
       }
 
-      toast.success("Recipe published!");
+      // Fire AI analysis (non-blocking) — recipe will publish to homepage when done
+      supabase.functions.invoke("analyze-recipe", { body: { recipeId } }).catch((err) => {
+        console.error("analyze-recipe failed", err);
+      });
+
+      toast.success("Recipe saved! Analysing before publishing…");
       navigate(`/recipe/${recipeId}`);
     } catch (err: any) {
       console.error(err);
