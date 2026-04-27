@@ -46,7 +46,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ ok: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Ask AI to extract keywords per step + tips
+    // Ask AI to extract a short title, emphasized phrases (with size hint), and tips
     const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
@@ -56,7 +56,7 @@ Deno.serve(async (req) => {
           {
             role: "system",
             content:
-              "You analyze cooking recipe steps. For each step, extract the most important short keywords or phrases that should be visually emphasized while cooking — temperatures (e.g. 180°C), times (e.g. 5 min), key ingredients, and core actions. Keep each keyword 1-3 words and copy them VERBATIM from the step text. Also produce 1-3 short helpful cooking tips for the recipe overall.",
+              "You analyze cooking recipe steps for a clean, scannable cooking UI. For EACH step you must:\n- Write a 2-4 word title summarising the step (Title Case, e.g. 'Sear the Beef').\n- Pick 2-6 short phrases inside the step text to visually emphasise. Phrases must be copied VERBATIM from the step. Tag each with a level: 'xl' for the single most critical token (a temperature, total time, or core action), 'lg' for important specifics (key ingredient quantities, secondary times), 'md' for normal emphasis. Keep each phrase 1-3 words.\nAlso write 1-3 short helpful cooking tips for the recipe overall.",
           },
           {
             role: "user",
@@ -68,7 +68,7 @@ Deno.serve(async (req) => {
             type: "function",
             function: {
               name: "annotate_recipe",
-              description: "Return per-step highlight keywords and overall tips.",
+              description: "Return per-step title, emphasized phrases, and overall tips.",
               parameters: {
                 type: "object",
                 properties: {
@@ -78,9 +78,21 @@ Deno.serve(async (req) => {
                       type: "object",
                       properties: {
                         position: { type: "number" },
-                        keywords: { type: "array", items: { type: "string" } },
+                        title: { type: "string" },
+                        emphasis: {
+                          type: "array",
+                          items: {
+                            type: "object",
+                            properties: {
+                              phrase: { type: "string" },
+                              level: { type: "string", enum: ["md", "lg", "xl"] },
+                            },
+                            required: ["phrase", "level"],
+                            additionalProperties: false,
+                          },
+                        },
                       },
-                      required: ["position", "keywords"],
+                      required: ["position", "title", "emphasis"],
                       additionalProperties: false,
                     },
                   },
@@ -105,18 +117,26 @@ Deno.serve(async (req) => {
 
     const aiJson = await aiResp.json();
     const call = aiJson?.choices?.[0]?.message?.tool_calls?.[0];
-    let parsed: { steps: { position: number; keywords: string[] }[]; tips: string[] } = { steps: [], tips: [] };
+    let parsed: { steps: { position: number; title?: string; emphasis?: { phrase: string; level: "md" | "lg" | "xl" }[] }[]; tips: string[] } = { steps: [], tips: [] };
     try {
       parsed = JSON.parse(call?.function?.arguments ?? "{}");
     } catch (e) {
       console.error("parse error", e);
     }
 
-    // Update each step with keywords
+    // Update each step with title, emphasis, and a flat keywords list (for backwards compat)
     for (const s of steps) {
       const match = parsed.steps?.find((p) => p.position === s.position);
-      const kw = (match?.keywords ?? []).map((k) => String(k).trim()).filter(Boolean).slice(0, 6);
-      await admin.from("recipe_steps").update({ keywords: kw }).eq("id", s.id);
+      const emphasis = (match?.emphasis ?? [])
+        .map((e) => ({ phrase: String(e?.phrase ?? "").trim(), level: (e?.level ?? "md") as "md" | "lg" | "xl" }))
+        .filter((e) => e.phrase)
+        .slice(0, 8);
+      const keywords = emphasis.map((e) => e.phrase);
+      const title = (match?.title ?? "").toString().trim().slice(0, 60) || null;
+      await admin
+        .from("recipe_steps")
+        .update({ title, emphasis, keywords })
+        .eq("id", s.id);
     }
 
     await admin
