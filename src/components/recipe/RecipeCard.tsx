@@ -77,12 +77,6 @@ export const RecipeCard = ({ r }: { r: RecipeCardData }) => {
             {count > 0 && <span>{count}</span>}
           </button>
 
-          {/* Author chip — bottom-left moss glassmorphism */}
-          {r.author_name && (
-            <span className="absolute bottom-2 left-2 max-w-[80%] truncate rounded-full border border-white/40 bg-white/55 px-2.5 py-1 text-[11px] font-medium text-foreground shadow-sm backdrop-blur-xl backdrop-saturate-150">
-              {r.author_name}
-            </span>
-          )}
         </div>
         <div className="p-3">
           <h3 className="line-clamp-2 text-sm font-semibold leading-snug">{r.title}</h3>
