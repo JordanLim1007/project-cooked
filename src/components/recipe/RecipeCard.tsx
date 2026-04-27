@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
-import { Clock, Flame, Utensils } from "lucide-react";
-import { StepAnimation } from "@/components/animations/CookingAnimations";
+import { Clock, Flame, Utensils, ImageIcon } from "lucide-react";
 
 export type RecipeCardData = {
   id: string;
@@ -20,8 +19,8 @@ export const RecipeCard = ({ r }: { r: RecipeCardData }) => (
         {r.cover_image_url ? (
           <img src={r.cover_image_url} alt={r.title} loading="lazy" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
         ) : (
-          <div className="h-full w-full">
-            <StepAnimation stepText={r.title} animationKey={null} />
+          <div className="flex h-full w-full items-center justify-center bg-muted text-muted-foreground">
+            <ImageIcon className="h-8 w-8 opacity-40" />
           </div>
         )}
         {r.cuisine && (

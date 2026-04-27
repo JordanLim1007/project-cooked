@@ -25,6 +25,7 @@ export default function Home() {
       const { data } = await supabase
         .from("recipes")
         .select("id,title,cover_image_url,calories,spice_level,cuisine,cooking_style,time_minutes")
+        .eq("is_published", true)
         .order("created_at", { ascending: false })
         .limit(50);
       setRecipes(data ?? []);
@@ -49,8 +50,7 @@ export default function Home() {
       </header>
 
       <main className="mx-auto max-w-7xl px-4 py-5">
-        <h1 className="mb-1 text-2xl">Discover recipes</h1>
-        <p className="mb-5 text-sm text-muted-foreground">Step-by-step, animated, no AI.</p>
+        <h1 className="mb-5 text-2xl">Discover recipes</h1>
 
         {fetching ? (
           <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
