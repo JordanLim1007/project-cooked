@@ -112,6 +112,7 @@ export type Database = {
         Row: {
           animation_key: string | null
           id: string
+          keywords: string[] | null
           position: number
           recipe_id: string
           text: string
@@ -119,6 +120,7 @@ export type Database = {
         Insert: {
           animation_key?: string | null
           id?: string
+          keywords?: string[] | null
           position?: number
           recipe_id: string
           text: string
@@ -126,6 +128,7 @@ export type Database = {
         Update: {
           animation_key?: string | null
           id?: string
+          keywords?: string[] | null
           position?: number
           recipe_id?: string
           text?: string
@@ -151,9 +154,11 @@ export type Database = {
           difficulty: string | null
           food_type: string | null
           id: string
+          is_published: boolean
           meal_type: string | null
           spice_level: string | null
           time_minutes: number | null
+          tips: string[] | null
           title: string
           updated_at: string
           user_id: string
@@ -168,9 +173,11 @@ export type Database = {
           difficulty?: string | null
           food_type?: string | null
           id?: string
+          is_published?: boolean
           meal_type?: string | null
           spice_level?: string | null
           time_minutes?: number | null
+          tips?: string[] | null
           title: string
           updated_at?: string
           user_id: string
@@ -185,9 +192,11 @@ export type Database = {
           difficulty?: string | null
           food_type?: string | null
           id?: string
+          is_published?: boolean
           meal_type?: string | null
           spice_level?: string | null
           time_minutes?: number | null
+          tips?: string[] | null
           title?: string
           updated_at?: string
           user_id?: string
