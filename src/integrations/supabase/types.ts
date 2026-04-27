@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      follows: {
+        Row: {
+          created_at: string
+          follower_id: string
+          following_id: string
+        }
+        Insert: {
+          created_at?: string
+          follower_id: string
+          following_id: string
+        }
+        Update: {
+          created_at?: string
+          follower_id?: string
+          following_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -108,30 +126,54 @@ export type Database = {
           },
         ]
       }
+      recipe_likes: {
+        Row: {
+          created_at: string
+          recipe_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          recipe_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          recipe_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       recipe_steps: {
         Row: {
           animation_key: string | null
+          emphasis: Json | null
           id: string
           keywords: string[] | null
           position: number
           recipe_id: string
           text: string
+          title: string | null
         }
         Insert: {
           animation_key?: string | null
+          emphasis?: Json | null
           id?: string
           keywords?: string[] | null
           position?: number
           recipe_id: string
           text: string
+          title?: string | null
         }
         Update: {
           animation_key?: string | null
+          emphasis?: Json | null
           id?: string
           keywords?: string[] | null
           position?: number
           recipe_id?: string
           text?: string
+          title?: string | null
         }
         Relationships: [
           {
