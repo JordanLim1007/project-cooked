@@ -1,5 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useEffect, useState } from "react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -7,6 +6,8 @@ import { RecipeCard, RecipeCardData } from "@/components/recipe/RecipeCard";
 import { CUISINES, COOKING_STYLES, DIFFICULTIES } from "@/lib/recipe-options";
 import { Search as SearchIcon, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
+import { fetchRecipeFeed } from "@/lib/recipe-feed";
 
 const Pill = ({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) => (
   <button onClick={onClick} className={cn(
@@ -16,6 +17,7 @@ const Pill = ({ active, onClick, children }: { active: boolean; onClick: () => v
 );
 
 export default function SearchPage() {
+  const { user } = useAuth();
   const [q, setQ] = useState("");
   const [cuisine, setCuisine] = useState<string | null>(null);
   const [style, setStyle] = useState<string | null>(null);
@@ -25,19 +27,15 @@ export default function SearchPage() {
 
   const runSearch = async () => {
     setLoading(true);
-    let query = supabase
-      .from("recipes")
-      .select("id,title,cover_image_url,calories,spice_level,cuisine,cooking_style,time_minutes")
-      .eq("is_published", true)
-      .order("created_at", { ascending: false })
-      .limit(50);
-    if (q.trim()) query = query.ilike("title", `%${q.trim()}%`);
-    if (cuisine) query = query.eq("cuisine", cuisine);
-    if (style) query = query.eq("cooking_style", style);
-    if (difficulty) query = query.eq("difficulty", difficulty);
-    const { data, error } = await query;
-    if (error) console.error(error);
-    setResults(data ?? []);
+    const data = await fetchRecipeFeed({
+      q,
+      cuisine,
+      cooking_style: style,
+      difficulty,
+      sort: "top",
+      viewerId: user?.id ?? null,
+    });
+    setResults(data);
     setLoading(false);
   };
 
@@ -46,7 +44,7 @@ export default function SearchPage() {
     const t = setTimeout(runSearch, 250);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q, cuisine, style, difficulty]);
+  }, [q, cuisine, style, difficulty, user?.id]);
 
   const hasFilters = !!(cuisine || style || difficulty);
 

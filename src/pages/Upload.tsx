@@ -7,9 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
 import { CUISINES, COOKING_STYLES, SPICE_LEVELS, DIFFICULTIES, FOOD_TYPES, MEAL_TYPES } from "@/lib/recipe-options";
+import { SelectWithOther } from "@/components/ui/select-with-other";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2, Upload as UploadIcon, X, ImagePlus } from "lucide-react";
 import { toast } from "sonner";
 
@@ -173,12 +174,10 @@ export default function UploadPage() {
           <div><Label>Calories</Label><Input type="number" value={calories} onChange={(e) => setCalories(e.target.value)} placeholder="450" /></div>
           <div><Label>Time (min)</Label><Input type="number" value={timeMin} onChange={(e) => setTimeMin(e.target.value)} placeholder="45" /></div>
           <div><Label>Cuisine</Label>
-            <Select value={cuisine} onValueChange={setCuisine}><SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-              <SelectContent>{CUISINES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select>
+            <SelectWithOther value={cuisine} onChange={setCuisine} options={CUISINES} />
           </div>
           <div><Label>Style</Label>
-            <Select value={style} onValueChange={setStyle}><SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-              <SelectContent>{COOKING_STYLES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select>
+            <SelectWithOther value={style} onChange={setStyle} options={COOKING_STYLES} />
           </div>
           <div><Label>Spice</Label>
             <Select value={spice} onValueChange={setSpice}><SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
@@ -189,12 +188,10 @@ export default function UploadPage() {
               <SelectContent>{DIFFICULTIES.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent></Select>
           </div>
           <div><Label>Food type</Label>
-            <Select value={foodType} onValueChange={setFoodType}><SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-              <SelectContent>{FOOD_TYPES.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent></Select>
+            <SelectWithOther value={foodType} onChange={setFoodType} options={FOOD_TYPES} />
           </div>
           <div><Label>Meal</Label>
-            <Select value={mealType} onValueChange={setMealType}><SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-              <SelectContent>{MEAL_TYPES.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent></Select>
+            <SelectWithOther value={mealType} onChange={setMealType} options={MEAL_TYPES} />
           </div>
         </Card>
 
@@ -221,7 +218,7 @@ export default function UploadPage() {
             <h2 className="text-lg font-semibold">Steps</h2>
             <Button type="button" size="sm" variant="outline" onClick={addStep}><Plus className="h-4 w-4" /></Button>
           </div>
-          <p className="mb-3 text-xs text-muted-foreground">Write one short, clear action per step. Our AI will highlight the key parts (times, temperatures, ingredients).</p>
+          <p className="mb-3 text-xs text-muted-foreground">Write one short, clear action per step. Our AI will give it a title and highlight the key parts (times, temperatures, ingredients).</p>
           <div className="space-y-2">
             {steps.map((s, i) => (
               <div key={i} className="flex gap-2">
