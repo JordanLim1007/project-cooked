@@ -112,6 +112,29 @@ export default function RecipeDetail() {
             )}
           </div>
         </div>
+
+        {/* Author chip overlay — bottom-left, moss glassmorphism */}
+        {recipe.profiles && (
+          <Link
+            to={`/profile/${recipe.user_id}`}
+            className="absolute bottom-3 left-3 inline-flex max-w-[70%] items-center gap-2 rounded-full border border-white/45 bg-white/55 py-1 pl-1 pr-3 shadow-card backdrop-blur-xl backdrop-saturate-150 transition-transform hover:scale-[1.02]"
+          >
+            {recipe.profiles.avatar_url ? (
+              <img
+                src={recipe.profiles.avatar_url}
+                alt={recipe.profiles.display_name ?? ""}
+                className="h-7 w-7 shrink-0 rounded-full object-cover"
+              />
+            ) : (
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-foreground text-[11px] font-semibold text-background">
+                {recipe.profiles.display_name?.[0]?.toUpperCase() || "?"}
+              </span>
+            )}
+            <span className="truncate text-xs font-semibold text-foreground">
+              {recipe.profiles.display_name || "Anonymous"}
+            </span>
+          </Link>
+        )}
       </div>
 
       <main className="mx-auto max-w-2xl space-y-10 px-5 py-8">
