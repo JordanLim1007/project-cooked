@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { AppShell } from "@/components/layout/AppShell";
 import { RecipeCard, RecipeCardData } from "@/components/recipe/RecipeCard";
 import { Button } from "@/components/ui/button";
 import { ChefHat, LogIn } from "lucide-react";
+import { fetchRecipeFeed } from "@/lib/recipe-feed";
 
 export default function Home() {
   const navigate = useNavigate();
@@ -22,16 +22,11 @@ export default function Home() {
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase
-        .from("recipes")
-        .select("id,title,cover_image_url,calories,spice_level,cuisine,cooking_style,time_minutes")
-        .eq("is_published", true)
-        .order("created_at", { ascending: false })
-        .limit(50);
-      setRecipes(data ?? []);
+      const data = await fetchRecipeFeed({ sort: "top", limit: 50, viewerId: user?.id ?? null });
+      setRecipes(data);
       setFetching(false);
     })();
-  }, []);
+  }, [user?.id]);
 
   return (
     <AppShell>
