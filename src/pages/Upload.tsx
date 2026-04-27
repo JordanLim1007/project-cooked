@@ -157,7 +157,7 @@ export default function UploadPage() {
                   </button>
                 </div>
               ))}
-              {files.length < 6 && (
+              {files.length < 12 && (
                 <label className="flex aspect-square cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-border text-xs text-muted-foreground hover:border-primary hover:text-primary">
                   <ImagePlus className="h-5 w-5" />
                   Add photo
@@ -221,7 +221,7 @@ export default function UploadPage() {
             <h2 className="text-lg font-semibold">Steps</h2>
             <Button type="button" size="sm" variant="outline" onClick={addStep}><Plus className="h-4 w-4" /></Button>
           </div>
-          <p className="mb-3 text-xs text-muted-foreground">Use clear action words (chop, fry, boil, mix...) so the right animation is shown.</p>
+          <p className="mb-3 text-xs text-muted-foreground">Write one short, clear action per step. Our AI will highlight the key parts (times, temperatures, ingredients).</p>
           <div className="space-y-2">
             {steps.map((s, i) => (
               <div key={i} className="flex gap-2">
