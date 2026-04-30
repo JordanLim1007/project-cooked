@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { listInProgress, clearProgress } from "@/lib/cooking-progress";
 import { format, parseISO } from "date-fns";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 type Profile = { id: string; display_name: string | null; avatar_url: string | null; bio: string | null };
 
@@ -31,6 +32,10 @@ export default function ProfilePage() {
   const [isFollowing, setIsFollowing] = useState(false);
   const [followBusy, setFollowBusy] = useState(false);
   const [avatarBusy, setAvatarBusy] = useState(false);
+  const [listOpen, setListOpen] = useState<null | "followers" | "following">(null);
+  const [listUsers, setListUsers] = useState<{ id: string; display_name: string | null; avatar_url: string | null }[]>([]);
+  const [listLoading, setListLoading] = useState(false);
+  const [followingSet, setFollowingSet] = useState<Set<string>>(new Set());
   const [inProgress, setInProgress] = useState<Awaited<ReturnType<typeof listInProgress>>>([]);
   const [schedule, setSchedule] = useState<{ id: string; scheduled_date: string; recipes: { id: string; title: string; cover_image_url: string | null } | null }[]>([]);
   const avatarInputRef = useRef<HTMLInputElement>(null);
@@ -208,8 +213,12 @@ export default function ProfilePage() {
             {/* Stats — Instagram style */}
             <div className="mt-3 flex items-center gap-5 text-sm">
               <span><strong className="font-semibold">{uploaded.length}</strong> <span className="text-muted-foreground">recipe{uploaded.length === 1 ? "" : "s"}</span></span>
-              <span><strong className="font-semibold">{followerCount}</strong> <span className="text-muted-foreground">followers</span></span>
-              <span><strong className="font-semibold">{followingCount}</strong> <span className="text-muted-foreground">following</span></span>
+              <button type="button" onClick={() => openList("followers")} className="hover:opacity-70 transition-opacity">
+                <strong className="font-semibold">{followerCount}</strong> <span className="text-muted-foreground">followers</span>
+              </button>
+              <button type="button" onClick={() => openList("following")} className="hover:opacity-70 transition-opacity">
+                <strong className="font-semibold">{followingCount}</strong> <span className="text-muted-foreground">following</span>
+              </button>
             </div>
 
             {!isOwn && user && (
