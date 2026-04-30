@@ -1,6 +1,12 @@
 import { supabase } from "@/integrations/supabase/client";
 
-export type TimerState = { stepIndex: number; endsAt: number } | null;
+export type TimerState = {
+  stepIndex: number;
+  /** epoch ms when timer ends; null when paused */
+  endsAt: number | null;
+  /** seconds left when paused; null when running */
+  remaining: number | null;
+} | null;
 
 export type Progress = {
   recipe_id: string;
