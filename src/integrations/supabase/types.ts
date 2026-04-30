@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      cooking_progress: {
+        Row: {
+          checked_ingredient_ids: string[]
+          created_at: string
+          current_step: number
+          id: string
+          is_complete: boolean
+          recipe_id: string
+          timer_state: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          checked_ingredient_ids?: string[]
+          created_at?: string
+          current_step?: number
+          id?: string
+          is_complete?: boolean
+          recipe_id: string
+          timer_state?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          checked_ingredient_ids?: string[]
+          created_at?: string
+          current_step?: number
+          id?: string
+          is_complete?: boolean
+          recipe_id?: string
+          timer_state?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       follows: {
         Row: {
           created_at: string
@@ -95,6 +131,7 @@ export type Database = {
         Row: {
           id: string
           image_url: string | null
+          is_optional: boolean
           name: string
           position: number
           quantity: string | null
@@ -103,6 +140,7 @@ export type Database = {
         Insert: {
           id?: string
           image_url?: string | null
+          is_optional?: boolean
           name: string
           position?: number
           quantity?: string | null
@@ -111,6 +149,7 @@ export type Database = {
         Update: {
           id?: string
           image_url?: string | null
+          is_optional?: boolean
           name?: string
           position?: number
           quantity?: string | null
@@ -144,6 +183,33 @@ export type Database = {
         }
         Relationships: []
       }
+      recipe_schedule: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          recipe_id: string
+          scheduled_date: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          recipe_id: string
+          scheduled_date: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          recipe_id?: string
+          scheduled_date?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       recipe_steps: {
         Row: {
           animation_key: string | null
@@ -153,6 +219,7 @@ export type Database = {
           position: number
           recipe_id: string
           text: string
+          timer_seconds: number | null
           title: string | null
         }
         Insert: {
@@ -163,6 +230,7 @@ export type Database = {
           position?: number
           recipe_id: string
           text: string
+          timer_seconds?: number | null
           title?: string | null
         }
         Update: {
@@ -173,6 +241,7 @@ export type Database = {
           position?: number
           recipe_id?: string
           text?: string
+          timer_seconds?: number | null
           title?: string | null
         }
         Relationships: [

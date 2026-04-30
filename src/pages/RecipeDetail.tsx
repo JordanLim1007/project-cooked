@@ -1,19 +1,24 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Heart, Clock, Flame, Utensils, Trash2, Lightbulb, Loader2 } from "lucide-react";
+import { ArrowLeft, Heart, Clock, Flame, Utensils, Trash2, Lightbulb, Loader2, CalendarPlus, Check } from "lucide-react";
 import { InstructionList } from "@/components/recipe/InstructionList";
+import { IngredientChecklist } from "@/components/recipe/IngredientChecklist";
 import { Reviews } from "@/components/recipe/Reviews";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { loadProgress, saveProgress, clearProgress, type TimerState } from "@/lib/cooking-progress";
+import { format } from "date-fns";
 
 type Recipe = { id: string; user_id: string; title: string; description: string | null; cover_image_url: string | null; calories: number | null; spice_level: string | null; cuisine: string | null; cooking_style: string | null; time_minutes: number | null; food_type: string | null; meal_type: string | null; difficulty: string | null; tips: string[] | null; is_published: boolean; profiles?: { display_name: string | null; avatar_url: string | null } | null };
-type Ingredient = { id: string; name: string; quantity: string | null; image_url: string | null; position: number };
-type Step = { id: string; text: string; position: number; title: string | null; keywords: string[] | null; emphasis: { phrase: string; level: "md" | "lg" | "xl" }[] | null };
+type Ingredient = { id: string; name: string; quantity: string | null; image_url: string | null; position: number; is_optional: boolean };
+type Step = { id: string; text: string; position: number; title: string | null; keywords: string[] | null; emphasis: { phrase: string; level: "md" | "lg" | "xl" }[] | null; timer_seconds: number | null };
 type RecipeImage = { id: string; image_url: string; position: number };
 
 export default function RecipeDetail() {
@@ -26,6 +31,15 @@ export default function RecipeDetail() {
   const [images, setImages] = useState<RecipeImage[]>([]);
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // Cooking progress
+  const [checkedIds, setCheckedIds] = useState<string[]>([]);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [timer, setTimer] = useState<TimerState>(null);
+  const [scheduleDate, setScheduleDate] = useState<Date | undefined>();
+  const [scheduleBusy, setScheduleBusy] = useState(false);
+  const hydrated = useRef(false);
+  const stepsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -45,8 +59,75 @@ export default function RecipeDetail() {
         const { data } = await supabase.from("saved_recipes").select("recipe_id").eq("user_id", user.id).eq("recipe_id", id).maybeSingle();
         setSaved(!!data);
       }
+      // Hydrate progress (cloud if logged in, else local)
+      const prog = await loadProgress(id, user?.id ?? null);
+      if (prog) {
+        setCheckedIds(prog.checked_ingredient_ids ?? []);
+        setCurrentStep(prog.current_step ?? 0);
+        setTimer((prog.timer_state as TimerState) ?? null);
+      }
+      hydrated.current = true;
     })();
   }, [id, user?.id]);
+
+  // Smart resume: scroll to last step
+  useEffect(() => {
+    if (!hydrated.current || currentStep <= 0) return;
+    const el = document.getElementById(`step-${currentStep}`);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    // Only on initial hydration
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated.current]);
+
+  const persist = (patch: Partial<{ checked_ingredient_ids: string[]; current_step: number; timer_state: TimerState; is_complete: boolean }>) => {
+    if (!id) return;
+    saveProgress(id, user?.id ?? null, patch).catch((e) => console.error("save progress", e));
+  };
+
+  const toggleChecked = (ingId: string) => {
+    setCheckedIds((prev) => {
+      const next = prev.includes(ingId) ? prev.filter((x) => x !== ingId) : [...prev, ingId];
+      persist({ checked_ingredient_ids: next });
+      return next;
+    });
+  };
+
+  const markStepDone = (idx: number) => {
+    const next = idx < currentStep ? idx : idx + 1;
+    setCurrentStep(next);
+    const complete = next >= steps.length;
+    persist({ current_step: next, is_complete: complete });
+    if (complete) toast.success("Recipe complete! Great job 🎉");
+  };
+
+  const handleTimerChange = (stepIndex: number, endsAt: number | null) => {
+    const next: TimerState = endsAt ? { stepIndex, endsAt } : null;
+    setTimer(next);
+    persist({ timer_state: next });
+  };
+
+  const resetCookingProgress = async () => {
+    if (!id) return;
+    setCheckedIds([]); setCurrentStep(0); setTimer(null);
+    await clearProgress(id, user?.id ?? null);
+    toast.success("Progress cleared");
+  };
+
+  const scheduleForDate = async (date: Date | undefined) => {
+    if (!user) { navigate("/auth"); return; }
+    if (!date || !id) return;
+    setScheduleBusy(true);
+    const dateStr = format(date, "yyyy-MM-dd");
+    const { error } = await supabase.from("recipe_schedule").insert({
+      user_id: user.id,
+      recipe_id: id,
+      scheduled_date: dateStr,
+    });
+    setScheduleBusy(false);
+    setScheduleDate(undefined);
+    if (error) toast.error(error.message);
+    else toast.success(`Scheduled for ${format(date, "EEE, MMM d")}`);
+  };
 
   const toggleSave = async () => {
     if (!user) { navigate("/auth"); return; }
@@ -174,33 +255,71 @@ export default function RecipeDetail() {
           </div>
         )}
 
+        {/* Schedule action */}
+        <div className="flex flex-wrap items-center gap-2">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm">
+                <CalendarPlus className="mr-2 h-4 w-4" /> Schedule
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-auto p-0">
+              <Calendar
+                mode="single"
+                selected={scheduleDate}
+                onSelect={(d) => { setScheduleDate(d); if (d) scheduleForDate(d); }}
+                disabled={(d) => d < new Date(new Date().setHours(0, 0, 0, 0))}
+                initialFocus
+                className={cn("p-3 pointer-events-auto")}
+              />
+            </PopoverContent>
+          </Popover>
+          {(checkedIds.length > 0 || currentStep > 0) && (
+            <Button variant="ghost" size="sm" onClick={resetCookingProgress} disabled={scheduleBusy}>
+              Reset progress
+            </Button>
+          )}
+        </div>
+
         <hr className="border-border" />
 
-        {/* Ingredients — bullet list */}
+        {/* Ingredients — interactive checklist */}
         {ingredients.length > 0 && (
           <section>
-            <h2 className="mb-4 text-sm font-semibold uppercase tracking-[0.16em] text-muted-foreground">Ingredients</h2>
-            <ul className="space-y-2.5">
-              {ingredients.map((ing) => (
-                <li key={ing.id} className="flex items-baseline gap-3 text-base">
-                  <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-foreground/40" />
-                  <span className="flex-1">
-                    {ing.quantity && <strong className="font-semibold">{ing.quantity}</strong>}
-                    {ing.quantity && " "}
-                    <span className="text-foreground/80">{ing.name}</span>
-                  </span>
-                </li>
-              ))}
-            </ul>
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-muted-foreground">Ingredients</h2>
+              <span className="text-xs text-muted-foreground">
+                {checkedIds.length}/{ingredients.length} ticked
+              </span>
+            </div>
+            <IngredientChecklist
+              ingredients={ingredients}
+              checkedIds={checkedIds}
+              onToggle={toggleChecked}
+            />
           </section>
         )}
 
         <hr className="border-border" />
 
         {/* Instructions */}
-        <section>
+        <section ref={stepsRef}>
           <h2 className="mb-5 text-sm font-semibold uppercase tracking-[0.16em] text-muted-foreground">Instructions</h2>
-          <InstructionList steps={steps} />
+          <InstructionList
+            steps={steps}
+            interactive={{
+              currentStep,
+              onStepDone: markStepDone,
+              timerEndsAt: timer?.endsAt ?? null,
+              timerStepIndex: timer?.stepIndex ?? null,
+              onTimerChange: handleTimerChange,
+            }}
+          />
+          {currentStep >= steps.length && steps.length > 0 && (
+            <div className="mt-5 flex items-center gap-2 rounded-xl border border-emerald-300/50 bg-emerald-50 p-3 text-sm text-emerald-900 dark:border-emerald-700/40 dark:bg-emerald-950/40 dark:text-emerald-100">
+              <Check className="h-4 w-4" /> All steps complete!
+            </div>
+          )}
         </section>
 
         {/* Tips */}

@@ -6,11 +6,13 @@ import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RecipeCard, RecipeCardData } from "@/components/recipe/RecipeCard";
-import { LogOut, Settings, ChefHat, Camera, UserPlus, UserCheck } from "lucide-react";
+import { LogOut, Settings, ChefHat, Camera, UserPlus, UserCheck, Clock, Calendar as CalendarIcon, Trash2 } from "lucide-react";
 import { fetchRecipeFeed } from "@/lib/recipe-feed";
 import { getChefBadge } from "@/lib/chef-badge";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { listInProgress, clearProgress } from "@/lib/cooking-progress";
+import { format, parseISO } from "date-fns";
 
 type Profile = { id: string; display_name: string | null; avatar_url: string | null; bio: string | null };
 
@@ -29,6 +31,8 @@ export default function ProfilePage() {
   const [isFollowing, setIsFollowing] = useState(false);
   const [followBusy, setFollowBusy] = useState(false);
   const [avatarBusy, setAvatarBusy] = useState(false);
+  const [inProgress, setInProgress] = useState<Awaited<ReturnType<typeof listInProgress>>>([]);
+  const [schedule, setSchedule] = useState<{ id: string; scheduled_date: string; recipes: { id: string; title: string; cover_image_url: string | null } | null }[]>([]);
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -62,6 +66,19 @@ export default function ProfilePage() {
           .select("recipes(id,title,cover_image_url,calories,spice_level,cuisine,cooking_style,time_minutes)")
           .eq("user_id", user.id);
         setSavedRecipes((saved ?? []).map((s: any) => s.recipes).filter(Boolean));
+
+        // In-progress + schedule
+        const [ip, sch] = await Promise.all([
+          listInProgress(user.id),
+          supabase
+            .from("recipe_schedule")
+            .select("id,scheduled_date,recipes(id,title,cover_image_url)")
+            .eq("user_id", user.id)
+            .gte("scheduled_date", format(new Date(), "yyyy-MM-dd"))
+            .order("scheduled_date", { ascending: true }),
+        ]);
+        setInProgress(ip);
+        setSchedule((sch.data ?? []) as any);
       }
     })();
   }, [profileId, isOwn, user, loading]);
@@ -104,6 +121,18 @@ export default function ProfilePage() {
     } finally {
       setAvatarBusy(false);
     }
+  };
+
+  const removeProgress = async (recipeId: string) => {
+    if (!user) return;
+    await clearProgress(recipeId, user.id);
+    setInProgress((prev) => prev.filter((p) => p.recipe_id !== recipeId));
+  };
+
+  const removeScheduled = async (id: string) => {
+    const { error } = await supabase.from("recipe_schedule").delete().eq("id", id);
+    if (error) return toast.error(error.message);
+    setSchedule((prev) => prev.filter((s) => s.id !== id));
   };
 
   if (!loading && !user && isOwn) {
@@ -198,9 +227,11 @@ export default function ProfilePage() {
         </div>
 
         <Tabs defaultValue="uploaded">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className={cn("grid w-full", isOwn ? "grid-cols-4" : "grid-cols-1")}>
             <TabsTrigger value="uploaded">Uploaded</TabsTrigger>
             {isOwn && <TabsTrigger value="saved">Saved</TabsTrigger>}
+            {isOwn && <TabsTrigger value="progress">In Progress</TabsTrigger>}
+            {isOwn && <TabsTrigger value="schedule">Schedule</TabsTrigger>}
           </TabsList>
 
           <TabsContent value="uploaded" className="mt-4">
@@ -224,6 +255,83 @@ export default function ProfilePage() {
                 <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
                   {savedRecipes.map(r => <RecipeCard key={r.id} r={r} />)}
                 </div>
+              )}
+            </TabsContent>
+          )}
+
+          {isOwn && (
+            <TabsContent value="progress" className="mt-4">
+              {inProgress.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-border p-8 text-center">
+                  <Clock className="mx-auto mb-2 h-6 w-6 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground">No recipes in progress. When you start ticking ingredients or steps, they'll show here automatically.</p>
+                </div>
+              ) : (
+                <ul className="space-y-2">
+                  {inProgress.map((p) => {
+                    const r = p.recipes;
+                    if (!r) return null;
+                    return (
+                      <li key={p.recipe_id} className="flex items-center gap-3 rounded-xl border border-border bg-card p-3 shadow-card">
+                        <Link to={`/recipe/${r.id}`} className="flex flex-1 items-center gap-3">
+                          <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-muted">
+                            {r.cover_image_url && <img src={r.cover_image_url} alt={r.title} className="h-full w-full object-cover" />}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-semibold">{r.title}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {p.checked_ingredient_ids.length} ingredient{p.checked_ingredient_ids.length === 1 ? "" : "s"} ticked · Step {p.current_step + 1}
+                            </p>
+                          </div>
+                        </Link>
+                        <Button variant="ghost" size="icon" onClick={() => removeProgress(p.recipe_id)} aria-label="Clear progress">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </TabsContent>
+          )}
+
+          {isOwn && (
+            <TabsContent value="schedule" className="mt-4">
+              {schedule.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-border p-8 text-center">
+                  <CalendarIcon className="mx-auto mb-2 h-6 w-6 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground">Nothing planned. Open a recipe and tap "Schedule" to plan a cooking day.</p>
+                </div>
+              ) : (
+                <ul className="space-y-2">
+                  {schedule.map((s) => {
+                    const r = s.recipes;
+                    const date = parseISO(s.scheduled_date);
+                    const isToday = format(date, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd");
+                    return (
+                      <li key={s.id} className="flex items-center gap-3 rounded-xl border border-border bg-card p-3 shadow-card">
+                        <div className={cn(
+                          "flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-lg",
+                          isToday ? "bg-primary text-primary-foreground" : "bg-muted",
+                        )}>
+                          <span className="text-[10px] font-semibold uppercase tracking-wider">{format(date, "MMM")}</span>
+                          <span className="text-lg font-bold leading-none">{format(date, "d")}</span>
+                        </div>
+                        {r ? (
+                          <Link to={`/recipe/${r.id}`} className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-semibold">{r.title}</p>
+                            <p className="text-xs text-muted-foreground">{format(date, "EEEE")}</p>
+                          </Link>
+                        ) : (
+                          <p className="flex-1 text-sm text-muted-foreground">Recipe removed</p>
+                        )}
+                        <Button variant="ghost" size="icon" onClick={() => removeScheduled(s.id)} aria-label="Remove from schedule">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </li>
+                    );
+                  })}
+                </ul>
               )}
             </TabsContent>
           )}

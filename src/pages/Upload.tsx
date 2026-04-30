@@ -12,9 +12,10 @@ import { CUISINES, COOKING_STYLES, SPICE_LEVELS, DIFFICULTIES, FOOD_TYPES, MEAL_
 import { SelectWithOther } from "@/components/ui/select-with-other";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2, Upload as UploadIcon, X, ImagePlus } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 
-type Ingredient = { name: string; quantity: string };
+type Ingredient = { name: string; quantity: string; is_optional: boolean };
 type Step = { text: string };
 
 export default function UploadPage() {
@@ -31,7 +32,7 @@ export default function UploadPage() {
   const [difficulty, setDifficulty] = useState<string>("");
   const [foodType, setFoodType] = useState<string>("");
   const [mealType, setMealType] = useState<string>("");
-  const [ingredients, setIngredients] = useState<Ingredient[]>([{ name: "", quantity: "" }]);
+  const [ingredients, setIngredients] = useState<Ingredient[]>([{ name: "", quantity: "", is_optional: false }]);
   const [steps, setSteps] = useState<Step[]>([{ text: "" }]);
   const [files, setFiles] = useState<File[]>([]);
   const [busy, setBusy] = useState(false);
@@ -48,7 +49,7 @@ export default function UploadPage() {
     );
   }
 
-  const addIngredient = () => setIngredients([...ingredients, { name: "", quantity: "" }]);
+  const addIngredient = () => setIngredients([...ingredients, { name: "", quantity: "", is_optional: false }]);
   const removeIngredient = (i: number) => setIngredients(ingredients.filter((_, idx) => idx !== i));
   const addStep = () => setSteps([...steps, { text: "" }]);
   const removeStep = (i: number) => setSteps(steps.filter((_, idx) => idx !== i));
@@ -102,7 +103,13 @@ export default function UploadPage() {
       // Insert ingredients, steps, images
       if (validIngredients.length) {
         await supabase.from("recipe_ingredients").insert(
-          validIngredients.map((ing, idx) => ({ recipe_id: recipeId, name: ing.name.trim(), quantity: ing.quantity.trim() || null, position: idx }))
+          validIngredients.map((ing, idx) => ({
+            recipe_id: recipeId,
+            name: ing.name.trim(),
+            quantity: ing.quantity.trim() || null,
+            position: idx,
+            is_optional: ing.is_optional,
+          })),
         );
       }
       if (validSteps.length) {
@@ -201,12 +208,22 @@ export default function UploadPage() {
             <h2 className="text-lg font-semibold">Ingredients</h2>
             <Button type="button" size="sm" variant="outline" onClick={addIngredient}><Plus className="h-4 w-4" /></Button>
           </div>
+          <p className="mb-3 text-xs text-muted-foreground">Tick "Optional" for garnishes or items not strictly needed. Our AI will also flag obvious optionals automatically.</p>
           <div className="space-y-2">
             {ingredients.map((ing, i) => (
-              <div key={i} className="flex gap-2">
-                <Input placeholder="Name (e.g. Onion)" value={ing.name} onChange={(e) => { const c = [...ingredients]; c[i].name = e.target.value; setIngredients(c); }} />
-                <Input className="w-28" placeholder="200g" value={ing.quantity} onChange={(e) => { const c = [...ingredients]; c[i].quantity = e.target.value; setIngredients(c); }} />
-                {ingredients.length > 1 && <Button type="button" variant="ghost" size="icon" onClick={() => removeIngredient(i)}><Trash2 className="h-4 w-4" /></Button>}
+              <div key={i} className="space-y-1.5">
+                <div className="flex gap-2">
+                  <Input placeholder="Name (e.g. Onion)" value={ing.name} onChange={(e) => { const c = [...ingredients]; c[i].name = e.target.value; setIngredients(c); }} />
+                  <Input className="w-28" placeholder="200g" value={ing.quantity} onChange={(e) => { const c = [...ingredients]; c[i].quantity = e.target.value; setIngredients(c); }} />
+                  {ingredients.length > 1 && <Button type="button" variant="ghost" size="icon" onClick={() => removeIngredient(i)}><Trash2 className="h-4 w-4" /></Button>}
+                </div>
+                <label className="ml-1 inline-flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
+                  <Checkbox
+                    checked={ing.is_optional}
+                    onCheckedChange={(v) => { const c = [...ingredients]; c[i].is_optional = !!v; setIngredients(c); }}
+                  />
+                  Optional
+                </label>
               </div>
             ))}
           </div>
