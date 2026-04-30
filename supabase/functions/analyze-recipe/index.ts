@@ -143,9 +143,13 @@ Deno.serve(async (req) => {
       console.error("parse error", e);
     }
 
-    // Update each step with title, emphasis, and a flat keywords list (for backwards compat)
-    for (const s of steps) {
-      const match = parsed.steps?.find((p) => p.position === s.position);
+    // Update each step with title, emphasis, and a flat keywords list (for backwards compat).
+    // Map by ordinal index — the AI receives steps in order, so parsed.steps[i] corresponds to steps[i].
+    // (Some models return 1-indexed `position`, which previously caused timers to render on the next step.)
+    const parsedByOrdinal = (parsed.steps ?? []).slice().sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+    for (let i = 0; i < steps.length; i++) {
+      const s = steps[i];
+      const match = parsedByOrdinal[i];
       const emphasis = (match?.emphasis ?? [])
         .map((e) => ({ phrase: String(e?.phrase ?? "").trim(), level: (e?.level ?? "md") as "md" | "lg" | "xl" }))
         .filter((e) => e.phrase)
