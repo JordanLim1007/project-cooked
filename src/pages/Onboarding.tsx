@@ -80,7 +80,16 @@ export default function Onboarding() {
           </span>
           <span className="font-heading text-xl font-bold">COOKED</span>
         </div>
-        <button onClick={() => navigate("/")} className="text-sm text-muted-foreground hover:text-foreground">Skip</button>
+        <button
+          onClick={() => {
+            localStorage.setItem("cooked.onboarded", "1");
+            localStorage.removeItem(STORAGE_KEY);
+            navigate("/", { replace: true });
+          }}
+          className="text-sm text-muted-foreground hover:text-foreground"
+        >
+          Skip
+        </button>
       </header>
 
       <div className="mx-auto max-w-md px-5">
