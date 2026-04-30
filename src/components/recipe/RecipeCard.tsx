@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Clock, Flame, Utensils, ImageIcon, Heart } from "lucide-react";
+import { Clock, Flame, Utensils, ImageIcon, Heart, CheckCircle2, AlertTriangle } from "lucide-react";
 import { useState, MouseEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -21,6 +21,14 @@ export type RecipeCardData = {
   liked_by_me?: boolean;
   /** Optional: author display name shown on the cover with moss-glass chip. */
   author_name?: string | null;
+  /** Optional: pantry-match summary for the search "what's in my fridge" mode. */
+  match?: {
+    status: "full" | "partial" | "none";
+    missingRequired: string[];
+    missingOptional: string[];
+    matchedCount: number;
+    requiredCount: number;
+  };
 };
 
 export const RecipeCard = ({ r }: { r: RecipeCardData }) => {
@@ -80,6 +88,19 @@ export const RecipeCard = ({ r }: { r: RecipeCardData }) => {
         </div>
         <div className="p-3">
           <h3 className="line-clamp-2 text-sm font-semibold leading-snug">{r.title}</h3>
+          {r.match && (
+            <div className="mt-1.5">
+              {r.match.status === "full" ? (
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-100">
+                  <CheckCircle2 className="h-3 w-3" /> Full match
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-900 dark:bg-amber-900/40 dark:text-amber-100">
+                  <AlertTriangle className="h-3 w-3" /> Missing {r.match.missingRequired.length}
+                </span>
+              )}
+            </div>
+          )}
           <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
             {r.time_minutes != null && (<span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" />{r.time_minutes}m</span>)}
             {r.calories != null && (<span>{r.calories} kcal</span>)}
