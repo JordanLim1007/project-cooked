@@ -140,6 +140,53 @@ export default function ProfilePage() {
     setSchedule((prev) => prev.filter((s) => s.id !== id));
   };
 
+  const openList = async (kind: "followers" | "following") => {
+    if (!profileId) return;
+    setListOpen(kind);
+    setListLoading(true);
+    setListUsers([]);
+    const col = kind === "followers" ? "follower_id" : "following_id";
+    const filterCol = kind === "followers" ? "following_id" : "follower_id";
+    const joinName = kind === "followers" ? "follows_follower_profile_fkey" : "follows_following_profile_fkey";
+    const { data } = await supabase
+      .from("follows")
+      .select(`profile:profiles!${joinName}(id,display_name,avatar_url)`)
+      .eq(filterCol, profileId);
+    const users = (data ?? [])
+      .map((row: any) => row.profile)
+      .filter(Boolean) as { id: string; display_name: string | null; avatar_url: string | null }[];
+    setListUsers(users);
+    // Load viewer's following set so we can show Follow/Unfollow
+    if (user) {
+      const { data: mine } = await supabase
+        .from("follows")
+        .select("following_id")
+        .eq("follower_id", user.id);
+      setFollowingSet(new Set((mine ?? []).map((r: any) => r.following_id)));
+    }
+    setListLoading(false);
+  };
+
+  const toggleFollowUser = async (targetId: string) => {
+    if (!user) { navigate("/auth"); return; }
+    if (targetId === user.id) return;
+    const isFollowingTarget = followingSet.has(targetId);
+    const next = new Set(followingSet);
+    if (isFollowingTarget) {
+      next.delete(targetId);
+      setFollowingSet(next);
+      await supabase.from("follows").delete().eq("follower_id", user.id).eq("following_id", targetId);
+      if (isOwn && listOpen === "following") {
+        setListUsers((prev) => prev.filter((u) => u.id !== targetId));
+        setFollowingCount((c) => Math.max(0, c - 1));
+      }
+    } else {
+      next.add(targetId);
+      setFollowingSet(next);
+      await supabase.from("follows").insert({ follower_id: user.id, following_id: targetId });
+    }
+  };
+
   if (!loading && !user && isOwn) {
     return (
       <AppShell>
