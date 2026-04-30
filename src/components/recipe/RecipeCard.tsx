@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { formatMinutes } from "@/lib/format-time";
 
 export type RecipeCardData = {
   id: string;
@@ -102,7 +103,7 @@ export const RecipeCard = ({ r }: { r: RecipeCardData }) => {
             </div>
           )}
           <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
-            {r.time_minutes != null && (<span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" />{r.time_minutes}m</span>)}
+            {r.time_minutes != null && (<span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" />{formatMinutes(r.time_minutes)}</span>)}
             {r.calories != null && (<span>{r.calories} kcal</span>)}
             {r.spice_level && (<span className="inline-flex items-center gap-1"><Flame className="h-3 w-3 text-primary" />{r.spice_level}</span>)}
             {r.cooking_style && (<span className="inline-flex items-center gap-1"><Utensils className="h-3 w-3" />{r.cooking_style}</span>)}
