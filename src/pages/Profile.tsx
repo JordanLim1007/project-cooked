@@ -6,7 +6,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RecipeCard, RecipeCardData } from "@/components/recipe/RecipeCard";
-import { LogOut, Settings, ChefHat, Camera, UserPlus, UserCheck, Clock, Calendar as CalendarIcon, Trash2 } from "lucide-react";
+import { LogOut, Settings, ChefHat, Camera, UserPlus, UserCheck, Clock, Calendar as CalendarIcon, Trash2, Sparkles } from "lucide-react";
 import { fetchRecipeFeed } from "@/lib/recipe-feed";
 import { getChefBadge } from "@/lib/chef-badge";
 import { toast } from "sonner";
@@ -211,6 +211,23 @@ export default function ProfilePage() {
           <h1 className="text-xl">Profile</h1>
           {isOwn && (
             <div className="flex gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                title="Re-analyze all my recipes"
+                onClick={async () => {
+                  const id = toast.loading("Re-analyzing recipes…");
+                  const { data, error } = await supabase.functions.invoke("analyze-recipe", {
+                    body: { all: true, force: true },
+                  });
+                  if (error) { toast.error(error.message, { id }); return; }
+                  const a = (data as any)?.analyzed ?? 0;
+                  const t = (data as any)?.total ?? 0;
+                  toast.success(`Updated ${a} of ${t} recipes`, { id });
+                }}
+              >
+                <Sparkles className="h-5 w-5" />
+              </Button>
               <Button variant="ghost" size="icon" onClick={() => navigate("/onboarding")}><Settings className="h-5 w-5" /></Button>
               <Button variant="ghost" size="icon" onClick={signOut}><LogOut className="h-5 w-5" /></Button>
             </div>
