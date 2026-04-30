@@ -1,5 +1,6 @@
 import { StepTimer } from "./StepTimer";
 import { cn } from "@/lib/utils";
+import { formatSecondsLong } from "@/lib/format-time";
 
 type Emphasis = { phrase: string; level: "md" | "lg" | "xl" };
 export type Step = {
@@ -112,7 +113,7 @@ export const InstructionList = ({ steps, interactive }: Props) => {
                 />
               ) : (
                 <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-muted/60 px-2.5 py-1 text-xs text-muted-foreground">
-                  ⏱️ Timer: {Math.round(s.timer_seconds / 60)} min
+                  ⏱️ Timer: {formatSecondsLong(s.timer_seconds)}
                 </p>
               )
             )}

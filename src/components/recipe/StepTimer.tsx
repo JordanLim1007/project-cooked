@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Play, Pause, RotateCcw, Timer } from "lucide-react";
+import { formatClock } from "@/lib/format-time";
 
 type Props = {
   seconds: number;
@@ -8,12 +9,6 @@ type Props = {
   remaining?: number | null;
   onChange: (next: { endsAt: number | null; remaining: number | null }) => void;
 };
-
-function format(s: number) {
-  const mm = Math.floor(s / 60);
-  const ss = s % 60;
-  return `${mm}:${ss.toString().padStart(2, "0")}`;
-}
 
 export function StepTimer({ seconds, endsAt, remaining: pausedRemaining, onChange }: Props) {
   const [now, setNow] = useState(() => Date.now());
@@ -34,7 +29,7 @@ export function StepTimer({ seconds, endsAt, remaining: pausedRemaining, onChang
     <div className="mt-3 inline-flex items-center gap-3 rounded-full border border-border bg-muted/40 py-1.5 pl-3 pr-1.5 text-sm">
       <Timer className="h-4 w-4 text-muted-foreground" />
       <span className="tabular-nums font-medium">
-        {done ? "Done!" : format(remaining)}
+        {done ? "Done!" : formatClock(remaining)}
       </span>
       <div className="flex items-center gap-1">
         {running ? (
