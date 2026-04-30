@@ -15,6 +15,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { loadProgress, saveProgress, clearProgress, type TimerState } from "@/lib/cooking-progress";
 import { format } from "date-fns";
+import { formatMinutes } from "@/lib/format-time";
 
 type Recipe = { id: string; user_id: string; title: string; description: string | null; cover_image_url: string | null; calories: number | null; spice_level: string | null; cuisine: string | null; cooking_style: string | null; time_minutes: number | null; food_type: string | null; meal_type: string | null; difficulty: string | null; tips: string[] | null; is_published: boolean; profiles?: { display_name: string | null; avatar_url: string | null } | null };
 type Ingredient = { id: string; name: string; quantity: string | null; image_url: string | null; position: number; is_optional: boolean };
@@ -255,7 +256,7 @@ export default function RecipeDetail() {
           <h1 className="text-3xl font-semibold leading-tight tracking-tight md:text-4xl">{recipe.title}</h1>
           {recipe.description && <p className="text-base leading-relaxed text-muted-foreground">{recipe.description}</p>}
           <div className="flex flex-wrap gap-x-5 gap-y-1.5 pt-1 text-sm text-muted-foreground">
-            {recipe.time_minutes && <span className="inline-flex items-center gap-1.5"><Clock className="h-4 w-4" /><strong className="font-semibold text-foreground">{recipe.time_minutes} min</strong></span>}
+            {recipe.time_minutes && <span className="inline-flex items-center gap-1.5"><Clock className="h-4 w-4" /><strong className="font-semibold text-foreground">{formatMinutes(recipe.time_minutes)}</strong></span>}
             {recipe.calories && <span><strong className="font-semibold text-foreground">{recipe.calories}</strong> kcal</span>}
             {recipe.spice_level && <span className="inline-flex items-center gap-1.5"><Flame className="h-4 w-4" />{recipe.spice_level}</span>}
             {recipe.cooking_style && <span className="inline-flex items-center gap-1.5"><Utensils className="h-4 w-4" />{recipe.cooking_style}</span>}
