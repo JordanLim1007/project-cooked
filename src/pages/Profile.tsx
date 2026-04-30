@@ -393,6 +393,57 @@ export default function ProfilePage() {
           )}
         </Tabs>
       </main>
+
+      <Dialog open={!!listOpen} onOpenChange={(o) => !o && setListOpen(null)}>
+        <DialogContent className="max-h-[80vh] overflow-hidden p-0 sm:max-w-md">
+          <DialogHeader className="border-b border-border px-5 py-4">
+            <DialogTitle className="text-base capitalize">{listOpen}</DialogTitle>
+          </DialogHeader>
+          <div className="max-h-[60vh] overflow-y-auto px-2 py-2">
+            {listLoading ? (
+              <p className="py-10 text-center text-sm text-muted-foreground">Loading…</p>
+            ) : listUsers.length === 0 ? (
+              <p className="py-10 text-center text-sm text-muted-foreground">
+                No {listOpen} yet.
+              </p>
+            ) : (
+              <ul>
+                {listUsers.map((u) => {
+                  const isMe = user?.id === u.id;
+                  const followingThem = followingSet.has(u.id);
+                  return (
+                    <li key={u.id} className="flex items-center gap-3 rounded-lg p-2 hover:bg-muted/50">
+                      <Link
+                        to={`/profile/${u.id}`}
+                        onClick={() => setListOpen(null)}
+                        className="flex flex-1 items-center gap-3 min-w-0"
+                      >
+                        {u.avatar_url ? (
+                          <img src={u.avatar_url} alt="" className="h-10 w-10 shrink-0 rounded-full object-cover" />
+                        ) : (
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-semibold">
+                            {u.display_name?.[0]?.toUpperCase() || "?"}
+                          </div>
+                        )}
+                        <span className="truncate text-sm font-semibold">{u.display_name || "Cook"}</span>
+                      </Link>
+                      {!isMe && user && (
+                        <Button
+                          size="sm"
+                          variant={followingThem ? "outline" : "default"}
+                          onClick={() => toggleFollowUser(u.id)}
+                        >
+                          {followingThem ? "Following" : "Follow"}
+                        </Button>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </AppShell>
   );
 }
