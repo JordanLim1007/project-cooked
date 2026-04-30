@@ -67,6 +67,28 @@ export default function RecipeDetail() {
         setTimer((prog.timer_state as TimerState) ?? null);
       }
       hydrated.current = true;
+
+      // Backfill AI analysis for older recipes that never got it
+      const stepsList = ((st as any) ?? []) as Step[];
+      const needsAnalysis =
+        stepsList.length > 0 &&
+        stepsList.every((s) => !s.emphasis || s.emphasis.length === 0) &&
+        stepsList.every((s) => !s.title) &&
+        stepsList.every((s) => !s.timer_seconds);
+      const ownerViewing = (r as any)?.user_id === user?.id;
+      if (needsAnalysis && ownerViewing) {
+        supabase.functions
+          .invoke("analyze-recipe", { body: { recipeId: id } })
+          .then(async () => {
+            const [{ data: st2 }, { data: r2 }] = await Promise.all([
+              supabase.from("recipe_steps").select("*").eq("recipe_id", id).order("position"),
+              supabase.from("recipes").select("tips,is_published").eq("id", id).maybeSingle(),
+            ]);
+            if (st2) setSteps(st2 as any);
+            if (r2) setRecipe((prev) => (prev ? { ...prev, tips: (r2 as any).tips, is_published: (r2 as any).is_published } : prev));
+          })
+          .catch((err) => console.error("re-analyze failed", err));
+      }
     })();
   }, [id, user?.id]);
 
@@ -100,8 +122,14 @@ export default function RecipeDetail() {
     if (complete) toast.success("Recipe complete! Great job 🎉");
   };
 
-  const handleTimerChange = (stepIndex: number, endsAt: number | null) => {
-    const next: TimerState = endsAt ? { stepIndex, endsAt } : null;
+  const handleTimerChange = (
+    stepIndex: number,
+    payload: { endsAt: number | null; remaining: number | null },
+  ) => {
+    const next: TimerState =
+      payload.endsAt == null && payload.remaining == null
+        ? null
+        : { stepIndex, endsAt: payload.endsAt, remaining: payload.remaining };
     setTimer(next);
     persist({ timer_state: next });
   };
@@ -312,6 +340,7 @@ export default function RecipeDetail() {
               onStepDone: markStepDone,
               timerEndsAt: timer?.endsAt ?? null,
               timerStepIndex: timer?.stepIndex ?? null,
+              timerRemaining: timer?.remaining ?? null,
               onTimerChange: handleTimerChange,
             }}
           />

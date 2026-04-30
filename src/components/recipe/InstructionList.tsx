@@ -56,7 +56,8 @@ type Props = {
     onStepDone: (idx: number) => void;
     timerEndsAt: number | null;
     timerStepIndex: number | null;
-    onTimerChange: (stepIndex: number, endsAt: number | null) => void;
+    timerRemaining: number | null;
+    onTimerChange: (stepIndex: number, next: { endsAt: number | null; remaining: number | null }) => void;
   };
 };
 
@@ -106,7 +107,8 @@ export const InstructionList = ({ steps, interactive }: Props) => {
                 <StepTimer
                   seconds={s.timer_seconds}
                   endsAt={interactive.timerStepIndex === i ? interactive.timerEndsAt : null}
-                  onChange={(endsAt) => interactive.onTimerChange(i, endsAt)}
+                  remaining={interactive.timerStepIndex === i ? interactive.timerRemaining : null}
+                  onChange={(next) => interactive.onTimerChange(i, next)}
                 />
               ) : (
                 <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-muted/60 px-2.5 py-1 text-xs text-muted-foreground">

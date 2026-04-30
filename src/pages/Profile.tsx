@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { listInProgress, clearProgress } from "@/lib/cooking-progress";
 import { format, parseISO } from "date-fns";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 type Profile = { id: string; display_name: string | null; avatar_url: string | null; bio: string | null };
 
@@ -31,6 +32,10 @@ export default function ProfilePage() {
   const [isFollowing, setIsFollowing] = useState(false);
   const [followBusy, setFollowBusy] = useState(false);
   const [avatarBusy, setAvatarBusy] = useState(false);
+  const [listOpen, setListOpen] = useState<null | "followers" | "following">(null);
+  const [listUsers, setListUsers] = useState<{ id: string; display_name: string | null; avatar_url: string | null }[]>([]);
+  const [listLoading, setListLoading] = useState(false);
+  const [followingSet, setFollowingSet] = useState<Set<string>>(new Set());
   const [inProgress, setInProgress] = useState<Awaited<ReturnType<typeof listInProgress>>>([]);
   const [schedule, setSchedule] = useState<{ id: string; scheduled_date: string; recipes: { id: string; title: string; cover_image_url: string | null } | null }[]>([]);
   const avatarInputRef = useRef<HTMLInputElement>(null);
@@ -135,6 +140,53 @@ export default function ProfilePage() {
     setSchedule((prev) => prev.filter((s) => s.id !== id));
   };
 
+  const openList = async (kind: "followers" | "following") => {
+    if (!profileId) return;
+    setListOpen(kind);
+    setListLoading(true);
+    setListUsers([]);
+    const col = kind === "followers" ? "follower_id" : "following_id";
+    const filterCol = kind === "followers" ? "following_id" : "follower_id";
+    const joinName = kind === "followers" ? "follows_follower_profile_fkey" : "follows_following_profile_fkey";
+    const { data } = await supabase
+      .from("follows")
+      .select(`profile:profiles!${joinName}(id,display_name,avatar_url)`)
+      .eq(filterCol, profileId);
+    const users = (data ?? [])
+      .map((row: any) => row.profile)
+      .filter(Boolean) as { id: string; display_name: string | null; avatar_url: string | null }[];
+    setListUsers(users);
+    // Load viewer's following set so we can show Follow/Unfollow
+    if (user) {
+      const { data: mine } = await supabase
+        .from("follows")
+        .select("following_id")
+        .eq("follower_id", user.id);
+      setFollowingSet(new Set((mine ?? []).map((r: any) => r.following_id)));
+    }
+    setListLoading(false);
+  };
+
+  const toggleFollowUser = async (targetId: string) => {
+    if (!user) { navigate("/auth"); return; }
+    if (targetId === user.id) return;
+    const isFollowingTarget = followingSet.has(targetId);
+    const next = new Set(followingSet);
+    if (isFollowingTarget) {
+      next.delete(targetId);
+      setFollowingSet(next);
+      await supabase.from("follows").delete().eq("follower_id", user.id).eq("following_id", targetId);
+      if (isOwn && listOpen === "following") {
+        setListUsers((prev) => prev.filter((u) => u.id !== targetId));
+        setFollowingCount((c) => Math.max(0, c - 1));
+      }
+    } else {
+      next.add(targetId);
+      setFollowingSet(next);
+      await supabase.from("follows").insert({ follower_id: user.id, following_id: targetId });
+    }
+  };
+
   if (!loading && !user && isOwn) {
     return (
       <AppShell>
@@ -208,8 +260,12 @@ export default function ProfilePage() {
             {/* Stats — Instagram style */}
             <div className="mt-3 flex items-center gap-5 text-sm">
               <span><strong className="font-semibold">{uploaded.length}</strong> <span className="text-muted-foreground">recipe{uploaded.length === 1 ? "" : "s"}</span></span>
-              <span><strong className="font-semibold">{followerCount}</strong> <span className="text-muted-foreground">followers</span></span>
-              <span><strong className="font-semibold">{followingCount}</strong> <span className="text-muted-foreground">following</span></span>
+              <button type="button" onClick={() => openList("followers")} className="hover:opacity-70 transition-opacity">
+                <strong className="font-semibold">{followerCount}</strong> <span className="text-muted-foreground">followers</span>
+              </button>
+              <button type="button" onClick={() => openList("following")} className="hover:opacity-70 transition-opacity">
+                <strong className="font-semibold">{followingCount}</strong> <span className="text-muted-foreground">following</span>
+              </button>
             </div>
 
             {!isOwn && user && (
@@ -337,6 +393,57 @@ export default function ProfilePage() {
           )}
         </Tabs>
       </main>
+
+      <Dialog open={!!listOpen} onOpenChange={(o) => !o && setListOpen(null)}>
+        <DialogContent className="max-h-[80vh] overflow-hidden p-0 sm:max-w-md">
+          <DialogHeader className="border-b border-border px-5 py-4">
+            <DialogTitle className="text-base capitalize">{listOpen}</DialogTitle>
+          </DialogHeader>
+          <div className="max-h-[60vh] overflow-y-auto px-2 py-2">
+            {listLoading ? (
+              <p className="py-10 text-center text-sm text-muted-foreground">Loading…</p>
+            ) : listUsers.length === 0 ? (
+              <p className="py-10 text-center text-sm text-muted-foreground">
+                No {listOpen} yet.
+              </p>
+            ) : (
+              <ul>
+                {listUsers.map((u) => {
+                  const isMe = user?.id === u.id;
+                  const followingThem = followingSet.has(u.id);
+                  return (
+                    <li key={u.id} className="flex items-center gap-3 rounded-lg p-2 hover:bg-muted/50">
+                      <Link
+                        to={`/profile/${u.id}`}
+                        onClick={() => setListOpen(null)}
+                        className="flex flex-1 items-center gap-3 min-w-0"
+                      >
+                        {u.avatar_url ? (
+                          <img src={u.avatar_url} alt="" className="h-10 w-10 shrink-0 rounded-full object-cover" />
+                        ) : (
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-semibold">
+                            {u.display_name?.[0]?.toUpperCase() || "?"}
+                          </div>
+                        )}
+                        <span className="truncate text-sm font-semibold">{u.display_name || "Cook"}</span>
+                      </Link>
+                      {!isMe && user && (
+                        <Button
+                          size="sm"
+                          variant={followingThem ? "outline" : "default"}
+                          onClick={() => toggleFollowUser(u.id)}
+                        >
+                          {followingThem ? "Following" : "Follow"}
+                        </Button>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </AppShell>
   );
 }
