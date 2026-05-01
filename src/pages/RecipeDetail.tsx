@@ -4,7 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Heart, Clock, Flame, Utensils, Trash2, Lightbulb, Loader2, CalendarPlus, Check } from "lucide-react";
+import { ArrowLeft, Heart, Bookmark, Clock, Flame, Utensils, Trash2, Lightbulb, Loader2, CalendarPlus, Check, Pencil, MonitorSmartphone, Volume2, VolumeX } from "lucide-react";
+import { isMuted, setMuted } from "@/lib/timer-sound";
+import { isWakeLockSupported, requestWakeLock, type WakeLockHandle } from "@/lib/wake-lock";
 import { InstructionList } from "@/components/recipe/InstructionList";
 import { IngredientChecklist } from "@/components/recipe/IngredientChecklist";
 import { Reviews } from "@/components/recipe/Reviews";
@@ -31,6 +33,10 @@ export default function RecipeDetail() {
   const [steps, setSteps] = useState<Step[]>([]);
   const [images, setImages] = useState<RecipeImage[]>([]);
   const [saved, setSaved] = useState(false);
+  const [liked, setLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
+  const [muted, setMutedState] = useState(isMuted());
+  const [wakeLock, setWakeLock] = useState<WakeLockHandle | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Cooking progress
@@ -59,7 +65,11 @@ export default function RecipeDetail() {
       if (user) {
         const { data } = await supabase.from("saved_recipes").select("recipe_id").eq("user_id", user.id).eq("recipe_id", id).maybeSingle();
         setSaved(!!data);
+        const { data: myLike } = await supabase.from("recipe_likes").select("recipe_id").eq("user_id", user.id).eq("recipe_id", id).maybeSingle();
+        setLiked(!!myLike);
       }
+      const { count: lc } = await supabase.from("recipe_likes").select("recipe_id", { count: "exact", head: true }).eq("recipe_id", id);
+      setLikeCount(lc ?? 0);
       // Hydrate progress (cloud if logged in, else local)
       const prog = await loadProgress(id, user?.id ?? null);
       if (prog) {
@@ -170,6 +180,36 @@ export default function RecipeDetail() {
     }
   };
 
+  const toggleLike = async () => {
+    if (!user) { navigate("/auth"); return; }
+    const next = !liked;
+    setLiked(next);
+    setLikeCount((c) => c + (next ? 1 : -1));
+    if (next) {
+      const { error } = await supabase.from("recipe_likes").insert({ user_id: user.id, recipe_id: id! });
+      if (error) { setLiked(false); setLikeCount((c) => c - 1); }
+    } else {
+      const { error } = await supabase.from("recipe_likes").delete().eq("user_id", user.id).eq("recipe_id", id!);
+      if (error) { setLiked(true); setLikeCount((c) => c + 1); }
+    }
+  };
+
+  const toggleWakeLock = async () => {
+    if (wakeLock) {
+      await wakeLock.release();
+      setWakeLock(null);
+      toast("Screen can sleep again");
+    } else {
+      const w = await requestWakeLock();
+      if (!w) { toast.error("Keep awake not supported on this browser"); return; }
+      setWakeLock(w);
+      toast.success("Screen will stay awake");
+    }
+  };
+
+  // Release wake lock on unmount
+  useEffect(() => () => { wakeLock?.release(); }, [wakeLock]);
+
   const deleteRecipe = async () => {
     if (!recipe) return;
     const { error } = await supabase.from("recipes").delete().eq("id", recipe.id);
@@ -198,9 +238,18 @@ export default function RecipeDetail() {
             <ArrowLeft className="h-5 w-5" />
           </button>
           <div className="flex gap-2">
-            <button onClick={toggleSave} className="flex h-10 w-10 items-center justify-center rounded-full bg-background/90 backdrop-blur-md shadow-card">
-              <Heart className={cn("h-5 w-5 transition-colors", saved ? "fill-primary text-primary" : "")} />
+            <button onClick={toggleLike} aria-label={liked ? "Unlike" : "Like"} className="flex h-10 items-center gap-1 rounded-full bg-background/90 px-3 backdrop-blur-md shadow-card">
+              <Heart className={cn("h-5 w-5", liked ? "fill-primary text-primary" : "")} />
+              {likeCount > 0 && <span className="text-xs font-semibold">{likeCount}</span>}
             </button>
+            <button onClick={toggleSave} className="flex h-10 w-10 items-center justify-center rounded-full bg-background/90 backdrop-blur-md shadow-card">
+              <Bookmark className={cn("h-5 w-5", saved ? "fill-foreground" : "")} />
+            </button>
+            {isOwner && (
+              <button onClick={() => navigate(`/recipe/${recipe.id}/edit`)} aria-label="Edit recipe" className="flex h-10 w-10 items-center justify-center rounded-full bg-background/90 backdrop-blur-md shadow-card">
+                <Pencil className="h-5 w-5" />
+              </button>
+            )}
             {isOwner && (
               <AlertDialog>
                 <AlertDialogTrigger asChild>
