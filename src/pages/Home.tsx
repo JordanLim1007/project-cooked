@@ -4,8 +4,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { AppShell } from "@/components/layout/AppShell";
 import { RecipeCard, RecipeCardData } from "@/components/recipe/RecipeCard";
 import { Button } from "@/components/ui/button";
-import { ChefHat, LogIn } from "lucide-react";
+import { LogIn } from "lucide-react";
 import { fetchRecipeFeed } from "@/lib/recipe-feed";
+import { Brand } from "@/components/layout/Brand";
+import { NotificationsBell } from "@/components/layout/NotificationsBell";
 
 export default function Home() {
   const navigate = useNavigate();
@@ -32,15 +34,13 @@ export default function Home() {
     <AppShell>
       <header className="sticky top-0 z-30 border-b border-border bg-background/90 backdrop-blur-md">
         <div className="mx-auto flex max-w-2xl items-center justify-between px-5 py-3">
-          <div className="flex items-center gap-2">
-            <span className="flex h-9 w-9 items-center justify-center rounded-full gradient-warm shadow-card">
-              <ChefHat className="h-5 w-5 text-primary-foreground" />
-            </span>
-            <span className="font-heading text-2xl font-bold tracking-tight">COOKED</span>
+          <Brand withTagline />
+          <div className="flex items-center gap-1">
+            <NotificationsBell />
+            {!user && (
+              <Link to="/auth"><Button size="sm" variant="outline"><LogIn className="mr-1.5 h-4 w-4" />Sign in</Button></Link>
+            )}
           </div>
-          {!user ? (
-            <Link to="/auth"><Button size="sm" variant="outline"><LogIn className="mr-1.5 h-4 w-4" />Sign in</Button></Link>
-          ) : null}
         </div>
       </header>
 

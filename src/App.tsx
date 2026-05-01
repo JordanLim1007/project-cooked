@@ -11,6 +11,8 @@ import ProfilePage from "./pages/Profile";
 import RecipeDetail from "./pages/RecipeDetail";
 import AuthPage from "./pages/Auth";
 import Onboarding from "./pages/Onboarding";
+import NotificationsPage from "./pages/Notifications";
+import EditRecipe from "./pages/EditRecipe";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,8 +31,10 @@ const App = () => (
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/profile/:id" element={<ProfilePage />} />
             <Route path="/recipe/:id" element={<RecipeDetail />} />
+            <Route path="/recipe/:id/edit" element={<EditRecipe />} />
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/onboarding" element={<Onboarding />} />
+            <Route path="/notifications" element={<NotificationsPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

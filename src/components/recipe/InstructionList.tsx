@@ -67,6 +67,10 @@ export const InstructionList = ({ steps, interactive }: Props) => {
     return <p className="py-6 text-center text-sm text-muted-foreground">No steps yet.</p>;
   }
   return (
+    <>
+      {interactive && (
+        <p className="mb-3 text-xs text-muted-foreground">Tap the number to mark a step done.</p>
+      )}
     <ol className="space-y-7">
       {steps.map((s, i) => (
         <li
@@ -74,6 +78,7 @@ export const InstructionList = ({ steps, interactive }: Props) => {
           className={cn(
             "flex gap-4 rounded-xl p-2 -mx-2 transition-colors",
             interactive && interactive.currentStep === i && "bg-muted/40 ring-1 ring-foreground/10",
+            interactive && i < interactive.currentStep && "opacity-60",
           )}
           id={`step-${i}`}
         >
@@ -98,9 +103,9 @@ export const InstructionList = ({ steps, interactive }: Props) => {
           )}
           <div className="flex-1">
             {s.title && (
-              <h3 className="mb-1 text-lg font-semibold tracking-tight text-foreground">{s.title}</h3>
+              <h3 className={cn("mb-1 text-lg font-semibold tracking-tight text-foreground", interactive && i < interactive.currentStep && "line-through decoration-foreground/40")}>{s.title}</h3>
             )}
-            <p className="text-base leading-relaxed text-foreground/80">
+            <p className={cn("text-base leading-relaxed text-foreground/80", interactive && i < interactive.currentStep && "line-through decoration-foreground/30")}>
               {renderHighlighted(s.text, s.emphasis, s.keywords)}
             </p>
             {s.timer_seconds && s.timer_seconds > 0 && (
@@ -121,5 +126,6 @@ export const InstructionList = ({ steps, interactive }: Props) => {
         </li>
       ))}
     </ol>
+    </>
   );
 };

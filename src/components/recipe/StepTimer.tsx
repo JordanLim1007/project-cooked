@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Play, Pause, RotateCcw, Timer } from "lucide-react";
 import { formatClock } from "@/lib/format-time";
+import { playTimerSound } from "@/lib/timer-sound";
 
 type Props = {
   seconds: number;
@@ -24,6 +25,17 @@ export function StepTimer({ seconds, endsAt, remaining: pausedRemaining, onChang
     : (pausedRemaining ?? seconds);
   const running = !!endsAt && remaining > 0;
   const done = !!endsAt && remaining === 0;
+
+  const firedRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (done && endsAt && firedRef.current !== endsAt) {
+      firedRef.current = endsAt;
+      playTimerSound();
+      if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+        try { new Notification("Timer finished", { body: "Your cooking timer is done." }); } catch { /* noop */ }
+      }
+    }
+  }, [done, endsAt]);
 
   return (
     <div className="mt-3 inline-flex items-center gap-3 rounded-full border border-border bg-muted/40 py-1.5 pl-3 pr-1.5 text-sm">

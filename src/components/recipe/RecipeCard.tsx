@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Clock, Flame, Utensils, ImageIcon, Heart, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Clock, Flame, Utensils, ImageIcon, Heart, Bookmark, CheckCircle2, AlertTriangle } from "lucide-react";
 import { useState, MouseEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -20,6 +20,8 @@ export type RecipeCardData = {
   like_count?: number;
   /** Optional: whether the current user already liked this recipe. */
   liked_by_me?: boolean;
+  /** Optional: whether the current user has saved this recipe. */
+  saved_by_me?: boolean;
   /** Optional: author display name shown on the cover with moss-glass chip. */
   author_name?: string | null;
   /** Optional: pantry-match summary for the search "what's in my fridge" mode. */
@@ -37,6 +39,7 @@ export const RecipeCard = ({ r }: { r: RecipeCardData }) => {
   const navigate = useNavigate();
   const [liked, setLiked] = useState(!!r.liked_by_me);
   const [count, setCount] = useState(r.like_count ?? 0);
+  const [saved, setSaved] = useState(!!r.saved_by_me);
   const [busy, setBusy] = useState(false);
 
   const toggleLike = async (e: MouseEvent) => {
@@ -59,6 +62,21 @@ export const RecipeCard = ({ r }: { r: RecipeCardData }) => {
     setBusy(false);
   };
 
+  const toggleSave = async (e: MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!user) { navigate("/auth"); return; }
+    const next = !saved;
+    setSaved(next);
+    if (next) {
+      const { error } = await supabase.from("saved_recipes").insert({ user_id: user.id, recipe_id: r.id });
+      if (error) setSaved(false);
+    } else {
+      const { error } = await supabase.from("saved_recipes").delete().eq("user_id", user.id).eq("recipe_id", r.id);
+      if (error) setSaved(true);
+    }
+  };
+
   return (
     <Link to={`/recipe/${r.id}`} className="group block animate-fade-in">
       <div className="overflow-hidden rounded-2xl bg-card shadow-card transition-all group-hover:shadow-elevated group-hover:-translate-y-0.5">
@@ -76,15 +94,24 @@ export const RecipeCard = ({ r }: { r: RecipeCardData }) => {
             </span>
           )}
 
-          {/* Like button — top-right glass pill */}
-          <button
-            onClick={toggleLike}
-            aria-label={liked ? "Unlike" : "Like"}
-            className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-background/85 px-2 py-1 text-[11px] font-semibold text-foreground shadow-card backdrop-blur-md transition-transform hover:scale-105"
-          >
-            <Heart className={cn("h-3.5 w-3.5", liked ? "fill-primary text-primary" : "text-foreground")} />
-            {count > 0 && <span>{count}</span>}
-          </button>
+          {/* Like (heart) + Save (bookmark) — separate pills, top-right */}
+          <div className="absolute right-2 top-2 flex gap-1.5">
+            <button
+              onClick={toggleSave}
+              aria-label={saved ? "Remove from saved" : "Save recipe"}
+              className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-background/85 text-foreground shadow-card backdrop-blur-md transition-transform hover:scale-105"
+            >
+              <Bookmark className={cn("h-3.5 w-3.5", saved ? "fill-foreground" : "")} />
+            </button>
+            <button
+              onClick={toggleLike}
+              aria-label={liked ? "Unlike" : "Like"}
+              className="inline-flex items-center gap-1 rounded-full bg-background/85 px-2 py-1 text-[11px] font-semibold text-foreground shadow-card backdrop-blur-md transition-transform hover:scale-105"
+            >
+              <Heart className={cn("h-3.5 w-3.5", liked ? "fill-primary text-primary" : "text-foreground")} />
+              {count > 0 && <span>{count}</span>}
+            </button>
+          </div>
 
         </div>
         <div className="p-3">
