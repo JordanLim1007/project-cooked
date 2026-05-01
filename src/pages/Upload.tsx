@@ -8,9 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
-import { CUISINES, COOKING_STYLES, SPICE_LEVELS, DIFFICULTIES, FOOD_TYPES, MEAL_TYPES } from "@/lib/recipe-options";
+import { CUISINES, COOKING_STYLES, SPICE_LEVELS, DIFFICULTIES, FOOD_TYPES } from "@/lib/recipe-options";
 import { SelectWithOther } from "@/components/ui/select-with-other";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MealTypeSelect } from "@/components/recipe/MealTypeSelect";
 import { Plus, Trash2, Upload as UploadIcon, X, ImagePlus } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
@@ -31,7 +32,7 @@ export default function UploadPage() {
   const [spice, setSpice] = useState<string>("");
   const [difficulty, setDifficulty] = useState<string>("");
   const [foodType, setFoodType] = useState<string>("");
-  const [mealType, setMealType] = useState<string>("");
+  const [mealTypes, setMealTypes] = useState<string[]>([]);
   const [ingredients, setIngredients] = useState<Ingredient[]>([{ name: "", quantity: "", is_optional: false }]);
   const [steps, setSteps] = useState<Step[]>([{ text: "" }]);
   const [files, setFiles] = useState<File[]>([]);
@@ -95,7 +96,8 @@ export default function UploadPage() {
         spice_level: spice || null,
         difficulty: difficulty || null,
         food_type: foodType || null,
-        meal_type: mealType || null,
+        meal_type: mealTypes[0] || null,
+        meal_types: mealTypes,
       }).select().single();
       if (recipeErr) throw recipeErr;
 
@@ -197,8 +199,10 @@ export default function UploadPage() {
           <div><Label>Food type</Label>
             <SelectWithOther value={foodType} onChange={setFoodType} options={FOOD_TYPES} />
           </div>
-          <div><Label>Meal</Label>
-            <SelectWithOther value={mealType} onChange={setMealType} options={MEAL_TYPES} />
+          <div className="col-span-2">
+            <Label>Meal</Label>
+            <p className="mb-2 text-xs text-muted-foreground">Tap any that apply.</p>
+            <MealTypeSelect value={mealTypes} onChange={setMealTypes} />
           </div>
         </Card>
 
