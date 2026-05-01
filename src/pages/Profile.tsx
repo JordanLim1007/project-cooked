@@ -194,7 +194,7 @@ export default function ProfilePage() {
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full gradient-warm">
             <ChefHat className="h-8 w-8 text-primary-foreground" />
           </div>
-          <h1 className="mb-3 text-2xl">Welcome to COOKED</h1>
+          <h1 className="mb-3 text-2xl">Welcome to Cooked</h1>
           <p className="mb-6 text-muted-foreground">Sign in to view your profile, save recipes, and share your own.</p>
           <Button onClick={() => navigate("/auth")} size="lg" className="w-full">Sign in</Button>
         </div>
