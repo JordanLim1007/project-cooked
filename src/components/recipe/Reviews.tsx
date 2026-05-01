@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -211,7 +212,7 @@ export const Reviews = ({ recipeId }: { recipeId: string }) => {
         ) : reviews.map(r => (
           <Card key={r.id} className="p-4 shadow-card">
             <div className="mb-2 flex items-start justify-between gap-2">
-              <div className="flex items-center gap-2.5">
+              <Link to={`/profile/${r.user_id}`} className="flex items-center gap-2.5 transition-opacity hover:opacity-80">
                 {r.profiles?.avatar_url ? (
                   <img src={r.profiles.avatar_url} alt="" className="h-9 w-9 rounded-full object-cover" />
                 ) : (
@@ -223,7 +224,7 @@ export const Reviews = ({ recipeId }: { recipeId: string }) => {
                   <p className="text-sm font-semibold">{r.profiles?.display_name || "Anonymous"}</p>
                   <Stars value={r.rating} size={14} />
                 </div>
-              </div>
+              </Link>
               {user?.id === r.user_id && !editing && (
                 <div className="flex gap-1">
                   <Button size="icon" variant="ghost" onClick={() => setEditing(true)}><Edit2 className="h-4 w-4" /></Button>

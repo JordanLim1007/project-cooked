@@ -352,6 +352,23 @@ export default function RecipeDetail() {
               />
             </PopoverContent>
           </Popover>
+          <Button
+            variant={wakeLock ? "default" : "outline"}
+            size="sm"
+            onClick={toggleWakeLock}
+          >
+            <MonitorSmartphone className="mr-2 h-4 w-4" />
+            {wakeLock ? "Screen awake" : "Keep awake"}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => { const next = !mutedState; setMuted(next); setMutedFlag(next); }}
+            aria-label={mutedState ? "Unmute timer" : "Mute timer"}
+          >
+            {mutedState ? <VolumeX className="mr-2 h-4 w-4" /> : <Volume2 className="mr-2 h-4 w-4" />}
+            {mutedState ? "Sound off" : "Sound on"}
+          </Button>
           {(checkedIds.length > 0 || currentStep > 0) && (
             <Button variant="ghost" size="sm" onClick={resetCookingProgress} disabled={scheduleBusy}>
               Reset progress
