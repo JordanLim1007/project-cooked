@@ -5,8 +5,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Heart, Bookmark, Clock, Flame, Utensils, Trash2, Lightbulb, Loader2, CalendarPlus, Check, Pencil, MonitorSmartphone, Volume2, VolumeX } from "lucide-react";
-import { isMuted, setMuted } from "@/lib/timer-sound";
-import { isWakeLockSupported, requestWakeLock, type WakeLockHandle } from "@/lib/wake-lock";
+import { isMuted, setMuted, playTimerSound } from "@/lib/timer-sound";
+import { requestWakeLock, type WakeLockHandle } from "@/lib/wake-lock";
 import { InstructionList } from "@/components/recipe/InstructionList";
 import { IngredientChecklist } from "@/components/recipe/IngredientChecklist";
 import { Reviews } from "@/components/recipe/Reviews";
@@ -35,7 +35,7 @@ export default function RecipeDetail() {
   const [saved, setSaved] = useState(false);
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
-  const [muted, setMutedState] = useState(isMuted());
+  const [mutedState, setMutedFlag] = useState(isMuted());
   const [wakeLock, setWakeLock] = useState<WakeLockHandle | null>(null);
   const [loading, setLoading] = useState(true);
 
