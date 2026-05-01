@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Heart, Bookmark, Clock, Flame, Utensils, Trash2, Lightbulb, Loader2, CalendarPlus, Check, Pencil, MonitorSmartphone, Volume2, VolumeX } from "lucide-react";
-import { isMuted, setMuted, playTimerSound } from "@/lib/timer-sound";
+import { isMuted, setMuted } from "@/lib/timer-sound";
 import { requestWakeLock, type WakeLockHandle } from "@/lib/wake-lock";
 import { InstructionList } from "@/components/recipe/InstructionList";
 import { IngredientChecklist } from "@/components/recipe/IngredientChecklist";
