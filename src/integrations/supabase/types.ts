@@ -91,6 +91,39 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          data: Json
+          id: string
+          is_read: boolean
+          recipe_id: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string
+          data?: Json
+          id?: string
+          is_read?: boolean
+          recipe_id?: string | null
+          type: string
+          user_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string
+          data?: Json
+          id?: string
+          is_read?: boolean
+          recipe_id?: string | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -118,6 +151,36 @@ export type Database = {
           id?: string
           updated_at?: string
           username?: string | null
+        }
+        Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          p256dh: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          p256dh: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          p256dh?: string
+          user_agent?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -298,6 +361,7 @@ export type Database = {
           id: string
           is_published: boolean
           meal_type: string | null
+          meal_types: string[]
           spice_level: string | null
           time_minutes: number | null
           tips: string[] | null
@@ -317,6 +381,7 @@ export type Database = {
           id?: string
           is_published?: boolean
           meal_type?: string | null
+          meal_types?: string[]
           spice_level?: string | null
           time_minutes?: number | null
           tips?: string[] | null
@@ -336,6 +401,7 @@ export type Database = {
           id?: string
           is_published?: boolean
           meal_type?: string | null
+          meal_types?: string[]
           spice_level?: string | null
           time_minutes?: number | null
           tips?: string[] | null
