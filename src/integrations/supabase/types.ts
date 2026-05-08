@@ -360,6 +360,7 @@ export type Database = {
           food_type: string | null
           id: string
           is_published: boolean
+          is_vegan: boolean
           meal_type: string | null
           meal_types: string[]
           spice_level: string | null
@@ -380,6 +381,7 @@ export type Database = {
           food_type?: string | null
           id?: string
           is_published?: boolean
+          is_vegan?: boolean
           meal_type?: string | null
           meal_types?: string[]
           spice_level?: string | null
@@ -400,6 +402,7 @@ export type Database = {
           food_type?: string | null
           id?: string
           is_published?: boolean
+          is_vegan?: boolean
           meal_type?: string | null
           meal_types?: string[]
           spice_level?: string | null

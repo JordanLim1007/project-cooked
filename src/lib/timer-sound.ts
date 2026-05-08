@@ -19,7 +19,7 @@ function getCtx(): AudioContext | null {
   return ctx;
 }
 
-/** Plays a 3-note ascending chime. Safe to call from background tabs. */
+/** Plays a longer ascending-then-repeating chime (~6 seconds). Safe to call from background tabs. */
 export async function playTimerSound() {
   if (isMuted()) return;
   const ac = getCtx();
@@ -28,18 +28,25 @@ export async function playTimerSound() {
     if (ac.state === "suspended") await ac.resume();
   } catch { /* ignore */ }
   const now = ac.currentTime;
-  const notes = [880, 1108.73, 1318.51];
-  notes.forEach((freq, i) => {
-    const osc = ac.createOscillator();
-    const gain = ac.createGain();
-    osc.frequency.value = freq;
-    osc.type = "sine";
-    const start = now + i * 0.18;
-    gain.gain.setValueAtTime(0.0001, start);
-    gain.gain.exponentialRampToValueAtTime(0.25, start + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.4);
-    osc.connect(gain).connect(ac.destination);
-    osc.start(start);
-    osc.stop(start + 0.45);
-  });
+  // Ascending chime, repeated 4 times for a noticeable ~6s alert.
+  const pattern = [880, 1108.73, 1318.51];
+  const reps = 4;
+  const noteSpacing = 0.18;
+  const repeatGap = 0.45;
+  for (let r = 0; r < reps; r++) {
+    const repStart = now + r * (pattern.length * noteSpacing + repeatGap);
+    pattern.forEach((freq, i) => {
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+      osc.frequency.value = freq;
+      osc.type = "sine";
+      const start = repStart + i * noteSpacing;
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(0.28, start + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.45);
+      osc.connect(gain).connect(ac.destination);
+      osc.start(start);
+      osc.stop(start + 0.5);
+    });
+  }
 }

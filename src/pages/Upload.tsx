@@ -33,6 +33,7 @@ export default function UploadPage() {
   const [difficulty, setDifficulty] = useState<string>("");
   const [foodType, setFoodType] = useState<string>("");
   const [mealTypes, setMealTypes] = useState<string[]>([]);
+  const [isVegan, setIsVegan] = useState(false);
   const [ingredients, setIngredients] = useState<Ingredient[]>([{ name: "", quantity: "", is_optional: false }]);
   const [steps, setSteps] = useState<Step[]>([{ text: "" }]);
   const [files, setFiles] = useState<File[]>([]);
@@ -98,6 +99,7 @@ export default function UploadPage() {
         food_type: foodType || null,
         meal_type: mealTypes[0] || null,
         meal_types: mealTypes,
+        is_vegan: isVegan,
       }).select().single();
       if (recipeErr) throw recipeErr;
 
@@ -203,6 +205,13 @@ export default function UploadPage() {
             <Label>Meal</Label>
             <p className="mb-2 text-xs text-muted-foreground">Tap any that apply.</p>
             <MealTypeSelect value={mealTypes} onChange={setMealTypes} />
+          </div>
+          <div className="col-span-2">
+            <label className="inline-flex cursor-pointer items-center gap-2 text-sm">
+              <Checkbox checked={isVegan} onCheckedChange={(v) => setIsVegan(!!v)} />
+              <span className="font-medium">Vegan</span>
+              <span className="text-xs text-muted-foreground">— show a vegan badge on this recipe.</span>
+            </label>
           </div>
         </Card>
 

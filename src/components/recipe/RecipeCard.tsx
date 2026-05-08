@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Clock, Flame, Utensils, ImageIcon, Heart, Bookmark, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Clock, Flame, Utensils, ImageIcon, Heart, Bookmark, CheckCircle2, AlertTriangle, Leaf } from "lucide-react";
 import { useState, MouseEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -16,6 +16,8 @@ export type RecipeCardData = {
   cuisine: string | null;
   cooking_style: string | null;
   time_minutes: number | null;
+  /** Optional: whether the recipe is tagged as vegan. */
+  is_vegan?: boolean;
   /** Optional: total likes for ranking + display. */
   like_count?: number;
   /** Optional: whether the current user already liked this recipe. */
@@ -88,11 +90,18 @@ export const RecipeCard = ({ r }: { r: RecipeCardData }) => {
               <ImageIcon className="h-8 w-8 opacity-40" />
             </div>
           )}
-          {r.cuisine && (
-            <span className="absolute left-2 top-2 rounded-full bg-background/90 px-2 py-0.5 text-[10px] font-semibold text-foreground backdrop-blur">
-              {r.cuisine}
-            </span>
-          )}
+          <div className="absolute left-2 top-2 flex flex-wrap gap-1.5">
+            {r.cuisine && (
+              <span className="rounded-full bg-background/90 px-2 py-0.5 text-[10px] font-semibold text-foreground backdrop-blur">
+                {r.cuisine}
+              </span>
+            )}
+            {r.is_vegan && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-600/95 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur">
+                <Leaf className="h-3 w-3" /> Vegan
+              </span>
+            )}
+          </div>
 
           {/* Like (heart) + Save (bookmark) — separate pills, top-right */}
           <div className="absolute right-2 top-2 flex gap-1.5">
