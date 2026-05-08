@@ -14,8 +14,28 @@ import Onboarding from "./pages/Onboarding";
 import NotificationsPage from "./pages/Notifications";
 import EditRecipe from "./pages/EditRecipe";
 import NotFound from "./pages/NotFound";
+import { useTimerWatcher } from "@/lib/use-timer-watcher";
 
 const queryClient = new QueryClient();
+
+const AppRoutes = () => {
+  useTimerWatcher();
+  return (
+    <Routes>
+      <Route path="/" element={<Home />} />
+      <Route path="/search" element={<SearchPage />} />
+      <Route path="/upload" element={<UploadPage />} />
+      <Route path="/profile" element={<ProfilePage />} />
+      <Route path="/profile/:id" element={<ProfilePage />} />
+      <Route path="/recipe/:id" element={<RecipeDetail />} />
+      <Route path="/recipe/:id/edit" element={<EditRecipe />} />
+      <Route path="/auth" element={<AuthPage />} />
+      <Route path="/onboarding" element={<Onboarding />} />
+      <Route path="/notifications" element={<NotificationsPage />} />
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -24,19 +44,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/search" element={<SearchPage />} />
-            <Route path="/upload" element={<UploadPage />} />
-            <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/profile/:id" element={<ProfilePage />} />
-            <Route path="/recipe/:id" element={<RecipeDetail />} />
-            <Route path="/recipe/:id/edit" element={<EditRecipe />} />
-            <Route path="/auth" element={<AuthPage />} />
-            <Route path="/onboarding" element={<Onboarding />} />
-            <Route path="/notifications" element={<NotificationsPage />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <AppRoutes />
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
