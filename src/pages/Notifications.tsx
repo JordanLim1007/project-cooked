@@ -16,20 +16,18 @@ const ICONS = {
   timer_done: { icon: Timer, color: "text-emerald-600" },
 } as const;
 
-const GROUP_LABEL: Record<string, string> = {
-  like: "Likes",
-  follow: "New followers",
-  new_recipe: "From people you follow",
-  timer_done: "Timers",
-};
-
 function describe(n: AppNotification): string {
   const who = n.actor?.display_name || "Someone";
   switch (n.type) {
     case "like": return `${who} liked “${n.recipe?.title ?? "your recipe"}”`;
     case "follow": return `${who} started following you`;
     case "new_recipe": return `${who} shared “${n.recipe?.title ?? "a new recipe"}”`;
-    case "timer_done": return `Timer finished${n.data?.label ? `: ${n.data.label as string}` : ""}`;
+    case "timer_done": {
+      const label = n.data?.label ? ` (${n.data.label as string})` : "";
+      return n.recipe
+        ? `Timer finished for “${n.recipe.title}”${label}`
+        : `Timer finished${label}`;
+    }
   }
 }
 
@@ -71,10 +69,9 @@ export default function NotificationsPage() {
     return () => { supabase.removeChannel(channel); };
   }, [user, loading, navigate]);
 
-  const grouped = items.reduce<Record<string, AppNotification[]>>((acc, n) => {
-    (acc[n.type] ??= []).push(n);
-    return acc;
-  }, {});
+  const sorted = [...items].sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+  );
 
   const remove = async (id: string) => {
     setItems((prev) => prev.filter((n) => n.id !== id));
@@ -101,55 +98,42 @@ export default function NotificationsPage() {
             <p className="text-sm text-muted-foreground">You're all caught up.</p>
           </div>
         ) : (
-          <div className="space-y-7">
-            {(["like", "follow", "new_recipe", "timer_done"] as const).map((type) => {
-              const list = grouped[type];
-              if (!list || list.length === 0) return null;
-              const { icon: Icon, color } = ICONS[type];
+          <ul className="space-y-1.5">
+            {sorted.map((n) => {
+              const { icon: Icon, color } = ICONS[n.type];
+              const href = targetHref(n);
+              const body = (
+                <div className="flex flex-1 items-center gap-3">
+                  {n.actor?.avatar_url ? (
+                    <img src={n.actor.avatar_url} alt="" className="h-10 w-10 shrink-0 rounded-full object-cover" />
+                  ) : (
+                    <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted")}>
+                      <Icon className={cn("h-4 w-4", color)} />
+                    </div>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm leading-snug">{describe(n)}</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
+                    </p>
+                  </div>
+                  {n.recipe?.cover_image_url && (
+                    <img src={n.recipe.cover_image_url} alt="" className="h-11 w-11 shrink-0 rounded-md object-cover" />
+                  )}
+                </div>
+              );
               return (
-                <section key={type}>
-                  <h2 className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                    <Icon className={cn("h-3.5 w-3.5", color)} /> {GROUP_LABEL[type]}
-                  </h2>
-                  <ul className="space-y-1.5">
-                    {list.map((n) => {
-                      const href = targetHref(n);
-                      const body = (
-                        <div className="flex flex-1 items-center gap-3">
-                          {n.actor?.avatar_url ? (
-                            <img src={n.actor.avatar_url} alt="" className="h-10 w-10 shrink-0 rounded-full object-cover" />
-                          ) : (
-                            <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted")}>
-                              <Icon className={cn("h-4 w-4", color)} />
-                            </div>
-                          )}
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm leading-snug">{describe(n)}</p>
-                            <p className="text-[11px] text-muted-foreground">
-                              {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
-                            </p>
-                          </div>
-                          {n.recipe?.cover_image_url && (
-                            <img src={n.recipe.cover_image_url} alt="" className="h-11 w-11 shrink-0 rounded-md object-cover" />
-                          )}
-                        </div>
-                      );
-                      return (
-                        <li key={n.id} className={cn("group flex items-center gap-2 rounded-xl p-2 transition-colors hover:bg-muted/50", !n.is_read && "bg-primary/5")}>
-                          {href ? (
-                            <Link to={href} onClick={() => markRead(n.id)} className="flex flex-1 items-center gap-3">{body}</Link>
-                          ) : body}
-                          <button onClick={() => remove(n.id)} aria-label="Delete" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100">
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </section>
+                <li key={n.id} className={cn("group flex items-center gap-2 rounded-xl p-2 transition-colors hover:bg-muted/50", !n.is_read && "bg-primary/5")}>
+                  {href ? (
+                    <Link to={href} onClick={() => markRead(n.id)} className="flex flex-1 items-center gap-3">{body}</Link>
+                  ) : body}
+                  <button onClick={() => remove(n.id)} aria-label="Delete" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100">
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </li>
               );
             })}
-          </div>
+          </ul>
         )}
 
         <div className="mt-10">
