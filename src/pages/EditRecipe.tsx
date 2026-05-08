@@ -39,6 +39,7 @@ export default function EditRecipe() {
   const [difficulty, setDifficulty] = useState<string>("");
   const [foodType, setFoodType] = useState<string>("");
   const [mealTypes, setMealTypes] = useState<string[]>([]);
+  const [isVegan, setIsVegan] = useState(false);
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [steps, setSteps] = useState<Step[]>([]);
   const [existingImages, setExistingImages] = useState<ExistingImg[]>([]);
@@ -68,6 +69,7 @@ export default function EditRecipe() {
       setFoodType((r as any).food_type ?? "");
       const mts: string[] = (r as any).meal_types ?? [];
       setMealTypes(mts.length > 0 ? mts : (r as any).meal_type ? [(r as any).meal_type] : []);
+      setIsVegan(!!(r as any).is_vegan);
       setIngredients((ing ?? []).map((i: any) => ({ id: i.id, name: i.name, quantity: i.quantity ?? "", is_optional: !!i.is_optional })));
       setSteps((st ?? []).map((s: any) => ({ id: s.id, text: s.text })));
       setExistingImages((imgs ?? []) as any);
@@ -121,6 +123,7 @@ export default function EditRecipe() {
         food_type: foodType || null,
         meal_type: mealTypes[0] || null,
         meal_types: mealTypes,
+        is_vegan: isVegan,
       }).eq("id", id);
       if (rerr) throw rerr;
 
@@ -265,6 +268,13 @@ export default function EditRecipe() {
             <Label>Meal</Label>
             <p className="mb-2 text-xs text-muted-foreground">Tap any that apply.</p>
             <MealTypeSelect value={mealTypes} onChange={setMealTypes} />
+          </div>
+          <div className="col-span-2">
+            <label className="inline-flex cursor-pointer items-center gap-2 text-sm">
+              <Checkbox checked={isVegan} onCheckedChange={(v) => setIsVegan(!!v)} />
+              <span className="font-medium">Vegan</span>
+              <span className="text-xs text-muted-foreground">— show a vegan badge on this recipe.</span>
+            </label>
           </div>
         </Card>
 
