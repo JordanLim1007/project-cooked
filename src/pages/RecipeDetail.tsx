@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Heart, Bookmark, Clock, Flame, Utensils, Trash2, Lightbulb, Loader2, CalendarPlus, Check, Pencil, MonitorSmartphone, Volume2, VolumeX } from "lucide-react";
+import { ArrowLeft, Heart, Bookmark, Clock, Flame, Utensils, Trash2, Lightbulb, Loader2, CalendarPlus, Check, Pencil, MonitorSmartphone, Volume2, VolumeX, Leaf } from "lucide-react";
 import { isMuted, setMuted } from "@/lib/timer-sound";
 import { requestWakeLock, type WakeLockHandle } from "@/lib/wake-lock";
 import { InstructionList } from "@/components/recipe/InstructionList";
@@ -19,7 +19,7 @@ import { loadProgress, saveProgress, clearProgress, type TimerState } from "@/li
 import { format } from "date-fns";
 import { formatMinutes } from "@/lib/format-time";
 
-type Recipe = { id: string; user_id: string; title: string; description: string | null; cover_image_url: string | null; calories: number | null; spice_level: string | null; cuisine: string | null; cooking_style: string | null; time_minutes: number | null; food_type: string | null; meal_type: string | null; difficulty: string | null; tips: string[] | null; is_published: boolean; profiles?: { display_name: string | null; avatar_url: string | null } | null };
+type Recipe = { id: string; user_id: string; title: string; description: string | null; cover_image_url: string | null; calories: number | null; spice_level: string | null; cuisine: string | null; cooking_style: string | null; time_minutes: number | null; food_type: string | null; meal_type: string | null; difficulty: string | null; tips: string[] | null; is_published: boolean; is_vegan?: boolean | null; profiles?: { display_name: string | null; avatar_url: string | null } | null };
 type Ingredient = { id: string; name: string; quantity: string | null; image_url: string | null; position: number; is_optional: boolean };
 type Step = { id: string; text: string; position: number; title: string | null; keywords: string[] | null; emphasis: { phrase: string; level: "md" | "lg" | "xl" }[] | null; timer_seconds: number | null };
 type RecipeImage = { id: string; image_url: string; position: number };
@@ -299,9 +299,16 @@ export default function RecipeDetail() {
       <main className="mx-auto max-w-2xl space-y-10 px-5 py-8">
         {/* Title block */}
         <header className="space-y-3">
-          {recipe.cuisine && (
-            <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">{recipe.cuisine}</p>
-          )}
+          <div className="flex flex-wrap items-center gap-2">
+            {recipe.cuisine && (
+              <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">{recipe.cuisine}</p>
+            )}
+            {recipe.is_vegan && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white">
+                <Leaf className="h-3 w-3" /> Vegan
+              </span>
+            )}
+          </div>
           <h1 className="text-3xl font-semibold leading-tight tracking-tight md:text-4xl">{recipe.title}</h1>
           {recipe.description && <p className="text-base leading-relaxed text-muted-foreground">{recipe.description}</p>}
           <div className="flex flex-wrap gap-x-5 gap-y-1.5 pt-1 text-sm text-muted-foreground">
