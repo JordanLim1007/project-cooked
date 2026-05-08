@@ -27,7 +27,7 @@ export async function fetchRecipeFeed(opts: FeedOptions = {}): Promise<FeedRecip
   let query = supabase
     .from("recipes")
     .select(
-      "id,title,cover_image_url,calories,spice_level,cuisine,cooking_style,time_minutes,user_id,created_at," +
+      "id,title,cover_image_url,calories,spice_level,cuisine,cooking_style,time_minutes,is_vegan,user_id,created_at," +
         "profiles!recipes_author_profile_fkey(display_name)"
     )
     .eq("is_published", true)
@@ -83,6 +83,7 @@ export async function fetchRecipeFeed(opts: FeedOptions = {}): Promise<FeedRecip
     cuisine: r.cuisine,
     cooking_style: r.cooking_style,
     time_minutes: r.time_minutes,
+    is_vegan: !!r.is_vegan,
     like_count: counts.get(r.id) ?? 0,
     liked_by_me: liked.has(r.id),
     author_name: r.profiles?.display_name ?? null,
