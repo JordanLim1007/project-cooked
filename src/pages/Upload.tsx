@@ -12,6 +12,7 @@ import { CUISINES, COOKING_STYLES, SPICE_LEVELS, DIFFICULTIES, FOOD_TYPES } from
 import { SelectWithOther } from "@/components/ui/select-with-other";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MealTypeSelect } from "@/components/recipe/MealTypeSelect";
+import { AllergenSelect } from "@/components/recipe/AllergenSelect";
 import { Plus, Trash2, Upload as UploadIcon, X, ImagePlus } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
@@ -34,6 +35,7 @@ export default function UploadPage() {
   const [foodType, setFoodType] = useState<string>("");
   const [mealTypes, setMealTypes] = useState<string[]>([]);
   const [isVegan, setIsVegan] = useState(false);
+  const [allergens, setAllergens] = useState<string[]>([]);
   const [ingredients, setIngredients] = useState<Ingredient[]>([{ name: "", quantity: "", is_optional: false }]);
   const [steps, setSteps] = useState<Step[]>([{ text: "" }]);
   const [files, setFiles] = useState<File[]>([]);
@@ -100,6 +102,7 @@ export default function UploadPage() {
         meal_type: mealTypes[0] || null,
         meal_types: mealTypes,
         is_vegan: isVegan,
+        allergens,
       }).select().single();
       if (recipeErr) throw recipeErr;
 
@@ -212,6 +215,11 @@ export default function UploadPage() {
               <span className="font-medium">Vegan</span>
               <span className="text-xs text-muted-foreground">— show a vegan badge on this recipe.</span>
             </label>
+          </div>
+          <div className="col-span-2">
+            <Label>Allergens</Label>
+            <p className="mb-2 text-xs text-muted-foreground">Tap any that apply so others can avoid them.</p>
+            <AllergenSelect value={allergens} onChange={setAllergens} />
           </div>
         </Card>
 

@@ -5,4 +5,16 @@ export const TIME_PREFERENCES = ["Under 15 min", "15-30 min", "30-60 min", "Over
 export const DIFFICULTIES = ["Beginner", "Amateur", "Expert"] as const;
 export const FOOD_TYPES = ["Mains", "Dessert", "Appetizer", "Side", "Drink"] as const;
 export const MEAL_TYPES = ["Breakfast", "Lunch", "Dinner", "Dessert", "Snack"] as const;
+export const ALLERGENS = [
+  "Gluten",
+  "Dairy",
+  "Eggs",
+  "Peanuts",
+  "Tree nuts",
+  "Soy",
+  "Fish",
+  "Shellfish",
+  "Sesame",
+  "Wheat",
+] as const;
 export const OTHER = "Other…";

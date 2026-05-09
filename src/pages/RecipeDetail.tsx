@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Heart, Bookmark, Clock, Flame, Utensils, Trash2, Lightbulb, Loader2, CalendarPlus, Check, Pencil, MonitorSmartphone, Volume2, VolumeX, Leaf } from "lucide-react";
+import { ArrowLeft, Heart, Bookmark, Clock, Flame, Utensils, Trash2, Lightbulb, Loader2, CalendarPlus, Check, Pencil, MonitorSmartphone, Volume2, VolumeX, Leaf, AlertTriangle } from "lucide-react";
 import { isMuted, setMuted } from "@/lib/timer-sound";
 import { requestWakeLock, type WakeLockHandle } from "@/lib/wake-lock";
 import { InstructionList } from "@/components/recipe/InstructionList";
@@ -19,7 +19,7 @@ import { loadProgress, saveProgress, clearProgress, type TimerState } from "@/li
 import { format } from "date-fns";
 import { formatMinutes } from "@/lib/format-time";
 
-type Recipe = { id: string; user_id: string; title: string; description: string | null; cover_image_url: string | null; calories: number | null; spice_level: string | null; cuisine: string | null; cooking_style: string | null; time_minutes: number | null; food_type: string | null; meal_type: string | null; difficulty: string | null; tips: string[] | null; is_published: boolean; is_vegan?: boolean | null; profiles?: { display_name: string | null; avatar_url: string | null } | null };
+type Recipe = { id: string; user_id: string; title: string; description: string | null; cover_image_url: string | null; calories: number | null; spice_level: string | null; cuisine: string | null; cooking_style: string | null; time_minutes: number | null; food_type: string | null; meal_type: string | null; difficulty: string | null; tips: string[] | null; is_published: boolean; is_vegan?: boolean | null; allergens?: string[] | null; profiles?: { display_name: string | null; avatar_url: string | null } | null };
 type Ingredient = { id: string; name: string; quantity: string | null; image_url: string | null; position: number; is_optional: boolean };
 type Step = { id: string; text: string; position: number; title: string | null; keywords: string[] | null; emphasis: { phrase: string; level: "md" | "lg" | "xl" }[] | null; timer_seconds: number | null };
 type RecipeImage = { id: string; image_url: string; position: number };
@@ -317,6 +317,20 @@ export default function RecipeDetail() {
             {recipe.spice_level && <span className="inline-flex items-center gap-1.5"><Flame className="h-4 w-4" />{recipe.spice_level}</span>}
             {recipe.cooking_style && <span className="inline-flex items-center gap-1.5"><Utensils className="h-4 w-4" />{recipe.cooking_style}</span>}
           </div>
+          {recipe.allergens && recipe.allergens.length > 0 && (
+            <div className="rounded-xl border border-amber-300/60 bg-amber-50 p-3 dark:border-amber-500/30 dark:bg-amber-500/10">
+              <div className="mb-1.5 inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-amber-800 dark:text-amber-200">
+                <AlertTriangle className="h-3.5 w-3.5" /> Contains allergens
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {recipe.allergens.map((a) => (
+                  <span key={a} className="rounded-full bg-amber-500/90 px-2 py-0.5 text-[11px] font-medium text-white">
+                    {a}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
         </header>
 
         {/* Extra photos gallery */}
