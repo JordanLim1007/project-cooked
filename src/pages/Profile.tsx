@@ -68,7 +68,7 @@ export default function ProfilePage() {
       if (isOwn && user) {
         const { data: saved } = await supabase
           .from("saved_recipes")
-          .select("recipes(id,title,cover_image_url,calories,spice_level,cuisine,cooking_style,time_minutes,is_vegan)")
+          .select("recipes(id,title,cover_image_url,calories,spice_level,cuisine,cooking_style,time_minutes,is_vegan,allergens)")
           .eq("user_id", user.id);
         setSavedRecipes((saved ?? []).map((s: any) => s.recipes).filter(Boolean));
 
