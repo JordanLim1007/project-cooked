@@ -92,7 +92,7 @@ export const RecipeCard = ({ r }: { r: RecipeCardData }) => {
               <ImageIcon className="h-8 w-8 opacity-40" />
             </div>
           )}
-          <div className="absolute left-2 top-2 flex flex-wrap gap-1.5">
+          <div className="absolute inset-x-2 top-2 flex flex-wrap gap-1.5 pr-24">
             {r.cuisine && (
               <span className="rounded-full bg-background/90 px-2 py-0.5 text-[10px] font-semibold text-foreground backdrop-blur">
                 {r.cuisine}
