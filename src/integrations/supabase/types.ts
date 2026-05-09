@@ -350,6 +350,7 @@ export type Database = {
       }
       recipes: {
         Row: {
+          allergens: string[]
           calories: number | null
           cooking_style: string | null
           cover_image_url: string | null
@@ -371,6 +372,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          allergens?: string[]
           calories?: number | null
           cooking_style?: string | null
           cover_image_url?: string | null
@@ -392,6 +394,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          allergens?: string[]
           calories?: number | null
           cooking_style?: string | null
           cover_image_url?: string | null
