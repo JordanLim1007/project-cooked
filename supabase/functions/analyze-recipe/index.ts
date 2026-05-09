@@ -82,7 +82,11 @@ async function analyzeOne(
   recipeId: string,
   force: boolean,
 ): Promise<"analyzed" | "skipped" | "empty"> {
-  const { data: recipe } = await admin.from("recipes").select("id,title").eq("id", recipeId).maybeSingle();
+  const { data: recipe } = await admin
+    .from("recipes")
+    .select("id,title,allergens,is_vegan")
+    .eq("id", recipeId)
+    .maybeSingle();
   if (!recipe) return "skipped";
   const { data: steps } = await admin.from("recipe_steps").select("id,text,position,timer_seconds,title,emphasis").eq("recipe_id", recipeId).order("position");
   const { data: ingredients } = await admin.from("recipe_ingredients").select("id,name,quantity,is_optional,position").eq("recipe_id", recipeId).order("position");
@@ -90,6 +94,8 @@ async function analyzeOne(
     await admin.from("recipes").update({ is_published: true }).eq("id", recipeId);
     return "empty";
   }
+  const userProvidedAllergens = Array.isArray((recipe as any).allergens) && (recipe as any).allergens.length > 0;
+  const shouldInferAllergens = !userProvidedAllergens;
   // If not forcing, skip recipes that already have full annotations on every step
   if (!force) {
     const fullyAnnotated = steps.every(
@@ -107,7 +113,7 @@ async function analyzeOne(
           {
             role: "system",
             content:
-              "You analyze cooking recipes for a clean, scannable cooking UI. Do three things:\n\n1) For EACH step:\n- Write a 2-4 word title (Title Case, e.g. 'Sear the Beef').\n- Pick 2-6 short phrases inside the step text to visually emphasise. Phrases must be copied VERBATIM from the step. Tag each with a level: 'xl' for the single most critical token (a temperature, total time, or core action), 'lg' for important specifics (key ingredient quantities, secondary times), 'md' for normal emphasis. Keep each phrase 1-3 words.\n- If the step contains a clear active wait/cook duration (e.g. 'bake 20 minutes', 'simmer for 5 min', 'rest 10 minutes'), set timer_seconds to that duration in seconds. Otherwise omit timer_seconds.\n\n2) For EACH ingredient: decide if it's optional. Mark optional=true ONLY for things like garnishes, 'to taste' seasonings, decorative herbs, or anything explicitly described as optional/garnish/for serving. Staples that the recipe needs (flour, eggs, oil, main proteins, main vegetables) are NOT optional.\n\n3) Write 1-3 short, helpful cooking tips for the recipe overall.",
+              "You analyze cooking recipes for a clean, scannable cooking UI. Do these things:\n\n1) For EACH step:\n- Write a 2-4 word title (Title Case, e.g. 'Sear the Beef').\n- Pick 2-6 short phrases inside the step text to visually emphasise. Phrases must be copied VERBATIM from the step. Tag each with a level: 'xl' for the single most critical token (a temperature, total time, or core action), 'lg' for important specifics (key ingredient quantities, secondary times), 'md' for normal emphasis. Keep each phrase 1-3 words.\n- If the step contains a clear active wait/cook duration (e.g. 'bake 20 minutes', 'simmer for 5 min', 'rest 10 minutes'), set timer_seconds to that duration in seconds. Otherwise omit timer_seconds.\n\n2) For EACH ingredient: decide if it's optional. Mark optional=true ONLY for things like garnishes, 'to taste' seasonings, decorative herbs, or anything explicitly described as optional/garnish/for serving. Staples that the recipe needs (flour, eggs, oil, main proteins, main vegetables) are NOT optional.\n\n3) Write 1-3 short, helpful cooking tips for the recipe overall.\n\n4) Determine `is_vegan`: true ONLY if the recipe contains NO animal-derived ingredients (no meat, poultry, fish, shellfish, dairy, eggs, honey, gelatin, etc.). Otherwise false.\n\n5) Determine `allergens`: a concise list of common allergens this recipe contains. Prefer these canonical names when applicable: Gluten, Dairy, Eggs, Peanuts, Tree nuts, Soy, Fish, Shellfish, Sesame, Wheat. Add other clear allergens (e.g. Mustard, Celery, Sulphites) by name only when clearly present. Empty array if none.",
           },
           {
             role: "user",
@@ -162,8 +168,10 @@ async function analyzeOne(
                     },
                   },
                   tips: { type: "array", items: { type: "string" } },
+                  is_vegan: { type: "boolean" },
+                  allergens: { type: "array", items: { type: "string" } },
                 },
-                required: ["steps", "tips"],
+                required: ["steps", "tips", "is_vegan", "allergens"],
                 additionalProperties: false,
               },
             },
@@ -185,6 +193,8 @@ async function analyzeOne(
       steps: { position: number; title?: string; timer_seconds?: number; emphasis?: { phrase: string; level: "md" | "lg" | "xl" }[] }[];
       ingredients?: { id: string; optional: boolean }[];
       tips: string[];
+      is_vegan?: boolean;
+      allergens?: string[];
     } = { steps: [], tips: [], ingredients: [] };
     try {
       parsed = JSON.parse(call?.function?.arguments ?? "{}");
@@ -223,10 +233,24 @@ async function analyzeOne(
     }
   }
 
-  await admin
-    .from("recipes")
-    .update({ tips: (parsed.tips ?? []).slice(0, 5), is_published: true })
-    .eq("id", recipeId);
+  const updatePayload: Record<string, unknown> = {
+    tips: (parsed.tips ?? []).slice(0, 5),
+    is_published: true,
+  };
+  if (shouldInferAllergens) {
+    const cleanedAllergens = Array.from(
+      new Set(
+        (parsed.allergens ?? [])
+          .map((a) => String(a ?? "").trim())
+          .filter((a) => a.length > 0 && a.length <= 40),
+      ),
+    ).slice(0, 12);
+    updatePayload.allergens = cleanedAllergens;
+    if (typeof parsed.is_vegan === "boolean") {
+      updatePayload.is_vegan = parsed.is_vegan;
+    }
+  }
+  await admin.from("recipes").update(updatePayload).eq("id", recipeId);
 
   return "analyzed";
 }
