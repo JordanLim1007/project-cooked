@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Clock, Flame, Utensils, ImageIcon, Heart, Bookmark, CheckCircle2, AlertTriangle, Leaf } from "lucide-react";
+import { Clock, Flame, Utensils, ImageIcon, Heart, Bookmark, CheckCircle2, AlertTriangle, Leaf, ShieldAlert } from "lucide-react";
 import { useState, MouseEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -18,6 +18,8 @@ export type RecipeCardData = {
   time_minutes: number | null;
   /** Optional: whether the recipe is tagged as vegan. */
   is_vegan?: boolean;
+  /** Optional: list of allergens contained in the recipe. */
+  allergens?: string[];
   /** Optional: total likes for ranking + display. */
   like_count?: number;
   /** Optional: whether the current user already liked this recipe. */
@@ -99,6 +101,14 @@ export const RecipeCard = ({ r }: { r: RecipeCardData }) => {
             {r.is_vegan && (
               <span className="inline-flex items-center gap-1 rounded-full bg-emerald-600/95 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur">
                 <Leaf className="h-3 w-3" /> Vegan
+              </span>
+            )}
+            {r.allergens && r.allergens.length > 0 && (
+              <span
+                title={`Contains: ${r.allergens.join(", ")}`}
+                className="inline-flex items-center gap-1 rounded-full bg-amber-500/95 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur"
+              >
+                <ShieldAlert className="h-3 w-3" /> {r.allergens.length === 1 ? r.allergens[0] : `${r.allergens.length} allergens`}
               </span>
             )}
           </div>
