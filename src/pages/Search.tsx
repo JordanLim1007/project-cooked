@@ -10,6 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { fetchRecipeFeed } from "@/lib/recipe-feed";
 import { COMMON_PANTRY } from "@/lib/ingredient-match";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { UserSearch } from "@/components/search/UserSearch";
 
 const Pill = ({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) => (
   <button onClick={onClick} className={cn(
@@ -20,6 +21,7 @@ const Pill = ({ active, onClick, children }: { active: boolean; onClick: () => v
 
 export default function SearchPage() {
   const { user } = useAuth();
+  const [scope, setScope] = useState<"recipes" | "users">("recipes");
   const [q, setQ] = useState("");
   const [cuisine, setCuisine] = useState<string | null>(null);
   const [style, setStyle] = useState<string | null>(null);
@@ -73,20 +75,36 @@ export default function SearchPage() {
       <header className="sticky top-0 z-30 border-b border-border bg-background/90 backdrop-blur-md">
         <div className="mx-auto max-w-2xl px-5 py-3">
           <h1 className="mb-3 text-xl">Search</h1>
+          <Tabs value={scope} onValueChange={(v) => setScope(v as "recipes" | "users")} className="mb-3">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="recipes">Recipes</TabsTrigger>
+              <TabsTrigger value="users">Users</TabsTrigger>
+            </TabsList>
+          </Tabs>
+          {scope === "recipes" && (
           <Tabs value={mode} onValueChange={(v) => setMode(v as "all" | "pantry")} className="mb-3">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="all">All recipes</TabsTrigger>
               <TabsTrigger value="pantry">What's in my pantry</TabsTrigger>
             </TabsList>
           </Tabs>
+          )}
+          {scope === "recipes" && (
           <div className="relative">
             <SearchIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search recipes..." className="pl-9" />
           </div>
+          )}
         </div>
       </header>
 
       <div className="mx-auto max-w-7xl px-4 pt-4">
+        {scope === "users" ? (
+          <div className="mx-auto max-w-2xl">
+            <UserSearch />
+          </div>
+        ) : (
+          <>
         {mode === "pantry" && (
           <section className="mb-5 space-y-3 rounded-2xl border border-border bg-card p-4 shadow-card">
             <div className="flex items-start gap-2">
