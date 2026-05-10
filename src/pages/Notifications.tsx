@@ -4,7 +4,6 @@ import { AppShell } from "@/components/layout/AppShell";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchNotifications, markAllRead, markRead, deleteNotification, type AppNotification } from "@/lib/notifications";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
 import { ArrowLeft, Bell, Heart, UserPlus, ChefHat, Timer, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
