@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { playTimerSound } from "@/lib/timer-sound";
+import { toast } from "sonner";
 
 type Row = {
   recipe_id: string;
@@ -41,18 +42,44 @@ export function useTimerWatcher() {
       const onThisRecipe = pathRef.current === `/recipe/${recipeId}`;
       if (onThisRecipe) return;
 
-      // Look up recipe title for nicer copy.
-      const { data: r } = await supabase
-        .from("recipes")
-        .select("title")
-        .eq("id", recipeId)
-        .maybeSingle();
+      // Look up recipe title + the matching step for richer notification copy.
+      const [{ data: r }, { data: prog }] = await Promise.all([
+        supabase.from("recipes").select("title").eq("id", recipeId).maybeSingle(),
+        supabase
+          .from("cooking_progress")
+          .select("timer_state")
+          .eq("user_id", user.id)
+          .eq("recipe_id", recipeId)
+          .maybeSingle(),
+      ]);
       const title = (r as any)?.title ?? "your recipe";
+      const stepIndex: number | null = (prog as any)?.timer_state?.stepIndex ?? null;
+      let stepTitle: string | null = null;
+      let durationSeconds: number | null = null;
+      if (stepIndex != null) {
+        const { data: stepRow } = await supabase
+          .from("recipe_steps")
+          .select("title,timer_seconds")
+          .eq("recipe_id", recipeId)
+          .eq("position", stepIndex)
+          .maybeSingle();
+        stepTitle = (stepRow as any)?.title ?? null;
+        durationSeconds = (stepRow as any)?.timer_seconds ?? null;
+      }
+      const stepNum = stepIndex != null ? stepIndex + 1 : null;
+      const label = stepNum
+        ? (stepTitle ? `Step ${stepNum}: ${stepTitle}` : `Step ${stepNum}`)
+        : null;
 
       try { await playTimerSound(); } catch { /* noop */ }
+      toast("Timer finished! Check your recipe step.", {
+        description: label ? `${title} — ${label}` : title,
+      });
       if (typeof Notification !== "undefined" && Notification.permission === "granted") {
         try {
-          new Notification("Timer finished", { body: `Your timer for "${title}" is done.` });
+          new Notification("Timer finished", {
+            body: label ? `${title} — ${label}` : `Your timer for "${title}" is done.`,
+          });
         } catch { /* noop */ }
       }
 
@@ -60,7 +87,14 @@ export function useTimerWatcher() {
         user_id: user.id,
         recipe_id: recipeId,
         type: "timer_done",
-        data: { title },
+        data: {
+          title,
+          stepIndex,
+          stepNumber: stepNum,
+          stepTitle,
+          durationSeconds,
+          completedAt: new Date(endsAt).toISOString(),
+        },
       });
 
       // Clear the timer so it doesn't re-fire.
