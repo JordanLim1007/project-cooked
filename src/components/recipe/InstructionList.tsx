@@ -59,6 +59,8 @@ type Props = {
     timerStepIndex: number | null;
     timerRemaining: number | null;
     onTimerChange: (stepIndex: number, next: { endsAt: number | null; remaining: number | null }) => void;
+    recipeId?: string;
+    recipeTitle?: string;
   };
 };
 
@@ -115,6 +117,10 @@ export const InstructionList = ({ steps, interactive }: Props) => {
                   endsAt={interactive.timerStepIndex === i ? interactive.timerEndsAt : null}
                   remaining={interactive.timerStepIndex === i ? interactive.timerRemaining : null}
                   onChange={(next) => interactive.onTimerChange(i, next)}
+                  recipeId={interactive.recipeId}
+                  recipeTitle={interactive.recipeTitle}
+                  stepIndex={i}
+                  stepTitle={s.title ?? undefined}
                 />
               ) : (
                 <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-muted/60 px-2.5 py-1 text-xs text-muted-foreground">
