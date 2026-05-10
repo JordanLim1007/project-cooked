@@ -4,8 +4,8 @@ import { AppShell } from "@/components/layout/AppShell";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchNotifications, markAllRead, markRead, deleteNotification, type AppNotification } from "@/lib/notifications";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
 import { ArrowLeft, Bell, Heart, UserPlus, ChefHat, Timer, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
 
@@ -23,12 +23,38 @@ function describe(n: AppNotification): string {
     case "follow": return `${who} started following you`;
     case "new_recipe": return `${who} shared “${n.recipe?.title ?? "a new recipe"}”`;
     case "timer_done": {
-      const label = n.data?.label ? ` (${n.data.label as string})` : "";
-      return n.recipe
-        ? `Timer finished for “${n.recipe.title}”${label}`
-        : `Timer finished${label}`;
+      const d = (n.data ?? {}) as Record<string, any>;
+      const recipeTitle = n.recipe?.title ?? d.title ?? "your recipe";
+      const stepNum: number | null = typeof d.stepNumber === "number" ? d.stepNumber : null;
+      const stepTitle: string | null = typeof d.stepTitle === "string" && d.stepTitle ? d.stepTitle : null;
+      const dur: number | null = typeof d.durationSeconds === "number" ? d.durationSeconds : null;
+      const stepLabel = stepNum
+        ? (stepTitle ? `Step ${stepNum}: ${stepTitle}` : `Step ${stepNum}`)
+        : null;
+      const durLabel = dur ? formatDuration(dur) : null;
+      const parts: string[] = [];
+      if (stepLabel && durLabel) parts.push(`${stepLabel} — ${durLabel}`);
+      else if (stepLabel) parts.push(stepLabel);
+      else if (durLabel) parts.push(durLabel);
+      const suffix = parts.length ? ` (${parts.join(" · ")})` : "";
+      // Legacy entries used `label`.
+      const legacy = d.label ? ` (${d.label as string})` : "";
+      return `Timer finished for “${recipeTitle}”${suffix || legacy}`;
     }
   }
+}
+
+function formatDuration(seconds: number): string {
+  if (seconds < 60) return `${seconds}s`;
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return s ? `${m}m ${s}s` : `${m} min`;
+}
+
+function timerCompletedAt(n: AppNotification): string {
+  const iso = (n.data as any)?.completedAt as string | undefined;
+  const d = iso ? new Date(iso) : new Date(n.created_at);
+  return formatDistanceToNow(d, { addSuffix: true });
 }
 
 function targetHref(n: AppNotification): string | null {
@@ -114,8 +140,13 @@ export default function NotificationsPage() {
                   <div className="min-w-0 flex-1">
                     <p className="text-sm leading-snug">{describe(n)}</p>
                     <p className="text-[11px] text-muted-foreground">
-                      {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
+                      {n.type === "timer_done" ? `Completed ${timerCompletedAt(n)}` : formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
                     </p>
+                    {n.type === "timer_done" && n.recipe && (
+                      <Link to={`/recipe/${n.recipe.id}`} onClick={() => markRead(n.id)} className="mt-1 inline-flex">
+                        <Button size="sm" variant="outline" className="h-7 text-xs">Open recipe</Button>
+                      </Link>
+                    )}
                   </div>
                   {n.recipe?.cover_image_url && (
                     <img src={n.recipe.cover_image_url} alt="" className="h-11 w-11 shrink-0 rounded-md object-cover" />

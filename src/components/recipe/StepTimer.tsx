@@ -2,6 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { Play, Pause, RotateCcw, Timer } from "lucide-react";
 import { formatClock } from "@/lib/format-time";
 import { playTimerSound } from "@/lib/timer-sound";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 type Props = {
   seconds: number;
@@ -9,9 +12,15 @@ type Props = {
   endsAt: number | null;
   remaining?: number | null;
   onChange: (next: { endsAt: number | null; remaining: number | null }) => void;
+  /** Context for the notification center entry. */
+  recipeId?: string;
+  recipeTitle?: string;
+  stepIndex?: number;
+  stepTitle?: string;
 };
 
-export function StepTimer({ seconds, endsAt, remaining: pausedRemaining, onChange }: Props) {
+export function StepTimer({ seconds, endsAt, remaining: pausedRemaining, onChange, recipeId, recipeTitle, stepIndex, stepTitle }: Props) {
+  const { user } = useAuth();
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -31,11 +40,36 @@ export function StepTimer({ seconds, endsAt, remaining: pausedRemaining, onChang
     if (done && endsAt && firedRef.current !== endsAt) {
       firedRef.current = endsAt;
       playTimerSound();
+      const stepNum = (stepIndex ?? 0) + 1;
+      const label = stepTitle ? `Step ${stepNum}: ${stepTitle}` : `Step ${stepNum}`;
+      toast("Timer finished! Check your recipe step.", {
+        description: recipeTitle ? `${recipeTitle} — ${label}` : label,
+      });
       if (typeof Notification !== "undefined" && Notification.permission === "granted") {
-        try { new Notification("Timer finished", { body: "Your cooking timer is done." }); } catch { /* noop */ }
+        try {
+          new Notification("Timer finished", {
+            body: recipeTitle ? `${recipeTitle} — ${label}` : "Your cooking timer is done.",
+          });
+        } catch { /* noop */ }
+      }
+      // Record in the in-app notification center so it survives navigation.
+      if (user && recipeId) {
+        supabase.from("notifications").insert({
+          user_id: user.id,
+          recipe_id: recipeId,
+          type: "timer_done",
+          data: {
+            title: recipeTitle ?? null,
+            stepIndex: stepIndex ?? null,
+            stepNumber: stepNum,
+            stepTitle: stepTitle ?? null,
+            durationSeconds: seconds,
+            completedAt: new Date(endsAt).toISOString(),
+          },
+        }).then(({ error }) => { if (error) console.error("notif insert", error); });
       }
     }
-  }, [done, endsAt]);
+  }, [done, endsAt, user, recipeId, recipeTitle, stepIndex, stepTitle, seconds]);
 
   return (
     <div className="mt-3 inline-flex items-center gap-3 rounded-full border border-border bg-muted/40 py-1.5 pl-3 pr-1.5 text-sm">

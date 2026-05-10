@@ -430,6 +430,8 @@ export default function RecipeDetail() {
               timerStepIndex: timer?.stepIndex ?? null,
               timerRemaining: timer?.remaining ?? null,
               onTimerChange: handleTimerChange,
+              recipeId: recipe.id,
+              recipeTitle: recipe.title,
             }}
           />
           {currentStep >= steps.length && steps.length > 0 && (

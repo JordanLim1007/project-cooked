@@ -8,6 +8,7 @@ import { LogIn } from "lucide-react";
 import { fetchRecipeFeed } from "@/lib/recipe-feed";
 import { Brand } from "@/components/layout/Brand";
 import { NotificationsBell } from "@/components/layout/NotificationsBell";
+import { RecommendedSection } from "@/components/recipe/RecommendedSection";
 
 export default function Home() {
   const navigate = useNavigate();
@@ -45,6 +46,8 @@ export default function Home() {
       </header>
 
       <main className="mx-auto max-w-7xl px-4 py-5">
+        <RecommendedSection />
+
         <h1 className="mb-5 text-2xl">Discover recipes</h1>
 
         {fetching ? (
