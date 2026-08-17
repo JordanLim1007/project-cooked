@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#58cc02" />
+  <title>UEC Quest — 统考刷题闯关</title>
+  <meta name="description" content="Duolingo-style UEC revision with Past Year physics questions, XP, streaks, hearts, mistakes and instant explanations." />
+  <style>
+    :root{
+      --green:#58cc02;--green-dark:#46a302;--blue:#1cb0f6;--purple:#ce82ff;--orange:#ff9600;--red:#ff4b4b;
+      --ink:#24323f;--muted:#778692;--line:#e5e5e5;--bg:#f7f8fb;--card:#fff;--shadow:0 8px 28px rgba(30,50,70,.08)
+    }
+    *{box-sizing:border-box} html{scroll-behavior:smooth}
+    body{margin:0;font-family:ui-rounded,"SF Pro Rounded","Nunito","Segoe UI",system-ui,-apple-system,sans-serif;color:var(--ink);background:var(--bg)}
+    button{font:inherit} button:focus-visible{outline:3px solid rgba(28,176,246,.25);outline-offset:2px}
+    .app{min-height:100vh;display:grid;grid-template-columns:240px 1fr}
+    aside{background:#fff;border-right:2px solid #eee;padding:22px 16px;position:sticky;top:0;height:100vh;z-index:5}
+    .brand{display:flex;align-items:center;gap:10px;font-size:22px;font-weight:1000;color:var(--green);padding:4px 8px 24px}
+    .mascot{width:42px;height:42px;border-radius:14px;background:var(--green);color:#fff;display:grid;place-items:center;box-shadow:0 5px 0 var(--green-dark);font-weight:1000}
+    nav{display:grid;gap:8px}.nav-btn{display:flex;align-items:center;gap:12px;width:100%;border:2px solid transparent;background:transparent;padding:12px;border-radius:15px;font-weight:900;color:#5b6873;cursor:pointer;text-align:left}.nav-btn:hover,.nav-btn.active{background:#f0fbff;border-color:#bce8fb;color:#149bd4}
+    .aside-foot{position:absolute;bottom:18px;left:16px;right:16px;padding:12px;border-radius:14px;background:#f8f8f8;color:var(--muted);font-size:12px;line-height:1.45}
+    main{width:min(1120px,100%);margin:0 auto;padding:28px 32px 70px}
+    .topbar{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:20px}.topbar h1{margin:0;font-size:30px}.sub{color:var(--muted);margin-top:6px}.stats{display:flex;gap:8px;flex-wrap:wrap}.stat{background:#fff;border:2px solid #eee;border-radius:14px;padding:9px 12px;font-weight:1000;white-space:nowrap}
+    .hero{background:linear-gradient(135deg,#58cc02,#7be52a);border-radius:24px;padding:26px;color:white;position:relative;overflow:hidden;box-shadow:0 9px 0 #46a302}.hero:after{content:"A1";position:absolute;right:22px;top:-8px;font-size:110px;font-weight:1000;opacity:.12;transform:rotate(8deg)}.hero h2{font-size:28px;margin:0 0 8px}.hero p{max-width:640px;line-height:1.55;margin:0}.hero-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+    .btn{border:0;border-radius:14px;padding:12px 17px;font-weight:1000;cursor:pointer;box-shadow:0 4px 0 rgba(0,0,0,.14);transition:.12s transform,.12s box-shadow}.btn:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.14)}.btn.white{background:white;color:var(--green-dark)}.btn.green{background:var(--green);color:white}.btn.blue{background:var(--blue);color:white}.btn.soft{background:#f0f0f0;color:#4b5964}.btn.danger{background:#fff1f1;color:var(--red);box-shadow:none}.btn:disabled{opacity:.45;cursor:not-allowed}
+    .section{margin-top:30px}.section-head{display:flex;justify-content:space-between;align-items:end;gap:12px;margin-bottom:14px}.section h2{margin:0;font-size:22px}
+    .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.card{background:white;border:2px solid #ececec;border-radius:20px;box-shadow:var(--shadow)}
+    .subject{padding:18px;cursor:pointer;transition:.16s transform,.16s border-color}.subject:hover{transform:translateY(-3px);border-color:#cfeeb9}.subject.locked{opacity:.7}.subject-icon{font-size:30px}.subject h3{margin:10px 0 4px}.tiny{font-size:12px;color:var(--muted)}
+    .progress{height:11px;background:#eceff1;border-radius:99px;overflow:hidden}.progress>div{height:100%;background:var(--green);border-radius:99px}
+    .past-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:14px}.year-card{padding:20px}.year-card h3{margin:0 0 10px}.year-row{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:12px 0;border-top:1px solid #eee}.year-row:first-of-type{border-top:0}.year-meta{display:flex;gap:7px;flex-wrap:wrap}.chip{font-size:12px;font-weight:900;background:#f3f3f3;border-radius:999px;padding:5px 9px}.chip.live{background:#ebffe1;color:#369900}.chip.blue{background:#e7f7ff;color:#118dc2}
+    .goal-card{padding:20px}.ring{width:118px;height:118px;border-radius:50%;background:conic-gradient(var(--green) 0%,#ececec 0);display:grid;place-items:center;margin:8px auto;position:relative}.ring:after{content:"";position:absolute;width:84px;height:84px;border-radius:50%;background:#fff}.ring span{position:relative;z-index:1;font-weight:1000}.goal-card{text-align:center}
+    .view{display:none}.view.active{display:block}
+    .quiz-shell{max-width:820px;margin:0 auto}.quiz-header{display:flex;gap:12px;align-items:center;margin-bottom:16px}.quiz-header .progress{flex:1}.quiz-card{padding:28px}.source-line{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.question{font-size:24px;line-height:1.5;margin:18px 0}.option-list{display:grid;gap:12px}.option{width:100%;text-align:left;border:2px solid #dedede;border-bottom-width:4px;background:#fff;border-radius:16px;padding:14px 16px;font-weight:850;cursor:pointer;color:var(--ink)}.option:hover{background:#fbfbfb}.option.selected{border-color:var(--blue);background:#eaf8ff;color:#087fae}.option.correct{border-color:var(--green);background:#edffe3;color:#2f8500}.option.wrong{border-color:var(--red);background:#fff0f0;color:#b93030}.feedback{display:none;margin-top:16px;padding:16px;border-radius:15px;line-height:1.55}.feedback.show{display:block}.feedback.good{background:#ecffe3;color:#327d0c}.feedback.bad{background:#fff0f0;color:#a52c2c}.quiz-actions{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:18px}.keyboard{font-size:12px;color:var(--muted)}
+    .browse-toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0}.filter{border:2px solid #e5e5e5;border-radius:12px;padding:10px 12px;background:#fff;font-weight:800}.question-list{display:grid;gap:12px}.q-row{padding:16px 18px;display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center}.q-number{width:38px;height:38px;border-radius:12px;background:#f2f2f2;display:grid;place-items:center;font-weight:1000}.q-row h4{margin:0 0 4px}.q-row button{border:0;background:#e7f7ff;color:#118dc2;border-radius:10px;padding:8px 10px;font-weight:900;cursor:pointer}
+    .mistake-list{display:grid;gap:12px}.mistake{padding:16px}.mistake b{display:block;margin:8px 0}.empty{padding:28px;text-align:center;color:var(--muted)}
+    .toast{position:fixed;bottom:24px;right:24px;background:#26343f;color:#fff;padding:12px 16px;border-radius:14px;opacity:0;transform:translateY(12px);pointer-events:none;transition:.2s;z-index:30}.toast.show{opacity:1;transform:none}
+    footer{margin-top:34px;color:#97a1a9;font-size:12px;line-height:1.5}
+    @media(max-width:900px){.app{grid-template-columns:1fr}aside{height:auto;position:sticky;padding:10px 12px;border-right:0;border-bottom:2px solid #eee}.brand{display:none}nav{grid-template-columns:repeat(4,1fr)}.nav-btn{justify-content:center;padding:9px 6px;font-size:12px}.nav-btn span.label{display:none}.aside-foot{display:none}main{padding:20px 14px 80px}.grid{grid-template-columns:repeat(2,1fr)}.past-grid{grid-template-columns:1fr}.topbar{flex-direction:column}.question{font-size:21px}}
+    @media(max-width:540px){.grid{grid-template-columns:1fr}.hero{padding:22px}.hero h2{font-size:24px}.topbar h1{font-size:26px}.quiz-card{padding:20px}.q-row{grid-template-columns:auto 1fr}.q-row button{grid-column:2}.keyboard{display:none}.nav-btn{font-size:18px}.stats{width:100%;justify-content:space-between}.stat{font-size:13px}}
+  </style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <div class="brand"><div class="mascot">U</div>UEC Quest</div>
+    <nav>
+      <button class="nav-btn active" data-view="home">🏠 <span class="label">首页</span></button>
+      <button class="nav-btn" data-view="past">📚 <span class="label">Past Year</span></button>
+      <button class="nav-btn" data-view="mistakes">📕 <span class="label">错题本</span></button>
+      <button class="nav-btn" data-view="statsView">🏆 <span class="label">进度</span></button>
+    </nav>
+    <div class="aside-foot">UEC Quest 是个人复习工具。Past Year 题目来自你导入的试卷；本站不是官方董总网站。</div>
+  </aside>
+
+  <main>
+    <section id="home" class="view active">
+      <div class="topbar">
+        <div><h1>统考，开刷。 👊</h1><div class="sub">一次 5 题，把 Past Year 刷成肌肉记忆。</div></div>
+        <div class="stats"><div class="stat">🔥 <span id="streak">1</span></div><div class="stat">💙 <span id="hearts">5</span></div><div class="stat">⚡ <span id="xp">0</span> XP</div></div>
+      </div>
+
+      <div class="hero">
+        <h2>Physics Past Year 已上线</h2>
+        <p>先从你上传的 2023 与 2025 物理 Paper 1 开始。做完马上判题、看解释；答错自动进错题本。</p>
+        <div class="hero-actions"><button class="btn white" onclick="startQuickPractice()">开始 5 题 →</button><button class="btn blue" onclick="switchView('past')">选年份</button></div>
+      </div>
+
+      <div class="section"><div class="section-head"><h2>科目</h2><span class="tiny">先把 Physics 做到完整，再逐科导入</span></div><div class="grid" id="subjects"></div></div>
+
+      <div class="section"><div class="section-head"><h2>Past Year</h2><button class="btn soft" onclick="switchView('past')">查看全部</button></div>
+        <div class="past-grid">
+          <div class="card year-card">
+            <h3>⚛️ Physics</h3>
+            <div class="year-row"><div><b>2025 · Paper 1</b><div class="year-meta"><span class="chip live">已导入</span><span class="chip blue">MCQ</span><span class="chip">70 min</span></div></div><button class="btn green" onclick="startPaper(2025)">开始</button></div>
+            <div class="year-row"><div><b>2023 · Paper 1</b><div class="year-meta"><span class="chip live">已导入</span><span class="chip blue">MCQ</span><span class="chip">70 min</span></div></div><button class="btn green" onclick="startPaper(2023)">开始</button></div>
+          </div>
+          <div class="card goal-card"><h3>今日 XP</h3><div class="ring" id="ring"><span id="ringXp">0 XP</span></div><div class="tiny">目标 100 XP · 每题 +10 XP</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="past" class="view">
+      <div class="topbar"><div><h1>Past Year 题库</h1><div class="sub">Physics · 目前已导入 2023 / 2025 Paper 1 精选题</div></div><button class="btn soft" onclick="switchView('home')">← 首页</button></div>
+      <div class="card" style="padding:20px">
+        <div class="browse-toolbar"><select class="filter" id="yearFilter" onchange="renderQuestionBrowser()"><option value="all">全部年份</option><option value="2025">2025</option><option value="2023">2023</option></select><select class="filter" id="topicFilter" onchange="renderQuestionBrowser()"><option value="all">全部主题</option></select><button class="btn green" onclick="startQuickPractice()">随机 5 题</button></div>
+        <div id="questionBrowser" class="question-list"></div>
+      </div>
+    </section>
+
+    <section id="quiz" class="view">
+      <div class="quiz-shell">
+        <div class="quiz-header"><button class="btn soft" onclick="exitQuiz()">✕</button><div class="progress"><div id="quizProgress" style="width:0%"></div></div><b>💙 <span id="quizHearts">5</span></b></div>
+        <div class="card quiz-card">
+          <div class="source-line"><span class="chip blue" id="sourceChip">2025 · Q1</span><span class="tiny" id="qCount">1 / 5</span></div>
+          <div class="question" id="questionText"></div>
+          <div class="option-list" id="options"></div>
+          <div class="feedback" id="feedback"><b id="feedbackTitle"></b><div id="explanation" style="margin-top:6px"></div></div>
+          <div class="quiz-actions"><span class="keyboard">按 1–4 选答案 · Enter 检查 / 下一题</span><div><button id="checkBtn" class="btn green" disabled onclick="checkAnswer()">检查</button><button id="nextBtn" class="btn blue" style="display:none" onclick="nextQuestion()">下一题</button></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="mistakes" class="view">
+      <div class="topbar"><div><h1>错题本</h1><div class="sub">答错的题自动收进来，直到你真的会。</div></div><button class="btn danger" onclick="clearMistakes()">清空</button></div>
+      <div id="mistakeList" class="mistake-list"></div>
+    </section>
+
+    <section id="statsView" class="view">
+      <div class="topbar"><div><h1>学习进度</h1><div class="sub">数据保存在你的浏览器里。</div></div></div>
+      <div class="grid">
+        <div class="card" style="padding:22px"><div class="tiny">总 XP</div><div style="font-size:42px;font-weight:1000" id="bigXp">0</div></div>
+        <div class="card" style="padding:22px"><div class="tiny">累计答题</div><div style="font-size:42px;font-weight:1000" id="answeredCount">0</div></div>
+        <div class="card" style="padding:22px"><div class="tiny">正确率</div><div style="font-size:42px;font-weight:1000" id="accuracy">—</div></div>
+      </div>
+    </section>
+
+    <footer>UEC Quest · Personal revision project. Past-year content is organized from user-provided exam materials. Not affiliated with Dong Zong / UEC.</footer>
+  </main>
+</div>
+<div class="toast" id="toast"></div>
+<script src="app.js"></script>
+</body>
+</html>
